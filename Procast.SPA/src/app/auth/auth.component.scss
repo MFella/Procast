@@ -1,0 +1,37 @@
+
+.or-container {
+  width: calc(100% - 32px);
+
+  &__label-container {
+    @apply relative bottom-2.5 bg-white;
+  }
+}
+
+.login-container {
+  .oauth-container {
+    &::ng-deep {
+      .mat-button-wrapper {
+        @apply flex justify-center items-center #{!important};
+      }
+    }
+
+    &__action-button {
+      &__label{
+        @apply pl-2;
+      }
+      &__icon {
+        @apply max-h-5;
+      }
+    }
+  }
+}
+
+.register-container {
+  &__inline-inputs {
+    &::ng-deep {
+      .mat-form-field {
+        width: calc(50% - 1rem);
+      }
+    }
+  }
+}
