@@ -1,1 +1,16 @@
-<p>start works!</p>
+<div class="grid grid-cols-1 start-container p-10">
+  <mat-card class="start-card">
+    <mat-card-header>
+      <div class="start-card__header pb-4">
+        <h1 class="!m-0">{{ 'PC_START_CARD_HEADER' | translate }}</h1>
+        <h1 class="!m-0">{{ 'PC_START_CARD_HEADER' | translate }}</h1>
+      </div>
+    </mat-card-header>
+    <hr class="opacity-25 mt-4">
+    <mat-card-content>
+      <div class="start-card__content whitespace-pre-line">
+        <p [innerHTML]="'PC_START_CARD_CONTENT' | translate"></p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

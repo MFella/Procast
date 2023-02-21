@@ -7,17 +7,21 @@
         <mat-icon aria-hidden="false" aria-label="Home" fontIcon="home" class="mr-2"></mat-icon>
         <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_START' | translate }}</span>
       </a>
-      <a mat-raised-button [routerLink]="['data']" [routerLinkActive]="'mat-accent'">
+      <a *ngIf="isUserLoggedIn()" mat-raised-button [routerLink]="['data']" [routerLinkActive]="'mat-accent'">
         <mat-icon class="mr-2">sd_storage</mat-icon>
         <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_MY_DATA' | translate }}</span>
       </a>
-      <a mat-raised-button [routerLink]="['forecasts']" [routerLinkActive]="'mat-accent'">
+      <a *ngIf="isUserLoggedIn()" mat-raised-button [routerLink]="['forecasts']" [routerLinkActive]="'mat-accent'">
         <mat-icon class="mr-2"> multiline_chart</mat-icon>
         <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_MY_FORECASTS' | translate }}</span>
       </a>
-      <a mat-raised-button [routerLink]="['auth']" [routerLinkActive]="'mat-accent'">
+      <a *ngIf="!isUserLoggedIn()" mat-raised-button [routerLink]="['auth']" [routerLinkActive]="'mat-accent'">
         <mat-icon class="mr-2">perm_identity</mat-icon>
         <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_LOGIN' | translate }}</span>
+      </a>
+      <a *ngIf="isUserLoggedIn()" mat-raised-button (click)="logoutUser()">
+        <mat-icon class="mr-2">call_missed_outgoing</mat-icon>
+        <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_LOGOUT' | translate }}</span>
       </a>
       <div mat-button class="!hidden">
         <span>{{ 'PC_MAIN_NAVBAR_BUTTON_LABEL_EN_SHORTCUT' | translate | uppercase }}</span>

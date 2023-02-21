@@ -1,4 +1,4 @@
-<div class="grid grid-cols-2 grid-flow-col gap-10 container flex justify-center mt-10">
+<div class="grid grid-cols-2 grid-flow-col gap-10 container flex justify-center mt-10 mx-auto">
   <mat-card class="login-container mx-4">
     <mat-card-content>
       <form [formGroup]="loginForm" class="flex flex-col">
@@ -14,7 +14,9 @@
           <mat-label>{{ 'PC_AUTH_LOGIN_CONTAINER_PASSWORD_LABEL' | translate }}</mat-label>
           <input matInput type="password" formControlName="password">
         </mat-form-field>
-        <button mat-raised-button color="primary" [disabled]="loginForm.invalid">
+        <button mat-raised-button color="primary"
+                [disabled]="loginForm.invalid"
+                (click)="submitLoginUser()">
           {{ 'PC_AUTH_LOGIN_CONTAINER_SUBMIT_BUTTON_LABEL' | translate }}
         </button>
         <div class="pt-4">
@@ -26,13 +28,10 @@
           </div>
         </div>
         <div class="oauth-container flex flex-col mt-8 gap-4">
-          <button class="oauth-container__action-button" mat-raised-button color="primary">
-            <img class="oauth-container__action-button__icon" src="/assets/icons/google-icon.svg" alt="google-icon">
-            <span class="oauth-container__action-button__label">{{'PC_AUTH_OAUTH_CONTAINER_FACEBOOK_BUTTON_LABEL' | translate}}</span>
-          </button>
+          <asl-google-signin-button class="flex justify-center" type="standard" size="large" text="continue_with" theme="filled_blue"> </asl-google-signin-button>
           <button class="oauth-container__action-button" mat-raised-button color="primary">
             <img class="oauth-container__action-button__icon" src="/assets/icons/facebook-icon.svg" alt="facebook-icon">
-            <span class="oauth-container__action-button__label">{{'PC_AUTH_OAUTH_CONTAINER_GOOGLE_BUTTON_LABEL' | translate}}</span>
+            <span class="oauth-container__action-button__label">{{'PC_AUTH_OAUTH_CONTAINER_FACEBOOK_BUTTON_LABEL' | translate}}</span>
           </button>
         </div>
       </form>
@@ -57,7 +56,8 @@
           <mat-label>{{ 'PC_AUTH_SIGN_UP_CONTAINER_EMAIL_LABEL' | translate }}</mat-label>
           <input matInput formControlName="email">
           <mat-error *ngIf="isRegisterFormInputInvalid('email')">
-            Email has wrong <strong>pattern</strong>
+            <strong>{{ this.getRegisterFormErrorTranslationKey('email') | translate }}</strong>
+<!--            Email has wrong <strong>pattern</strong>-->
           </mat-error>
         </mat-form-field>
         <div class="flex flex-row justify-between register-container__inline-inputs">

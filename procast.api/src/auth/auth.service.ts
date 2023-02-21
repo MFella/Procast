@@ -45,13 +45,6 @@ export class AuthService {
         return true;
     }
 
-    private async convertUserToCreateDtoToPrismaUser(userToCreateDto: UserToCreateDto): Promise<Prisma.UserCreateInput> {
-        const passwordHash: string = await argon2.hash(userToCreateDto.password);
-        const { password, repeatPassword, name, surname, ...rest } = userToCreateDto;
-
-        return { passwordHash, name: name ?? '', surname: surname ?? '',  ...rest };
-    }
-
     async loginUser(userToLoginDto: UserToLoginDto): Promise<JwtToken> {
         if (!await this.validateUser(userToLoginDto)) {
             throw new UnauthorizedException('Credentials dont match');
@@ -64,11 +57,23 @@ export class AuthService {
         return { expiresIn, accessToken: this.jwtService.sign(payload) }
     }
 
+    async isEmailValid(email: string): Promise<boolean> {
+        const userFromDb = await this.prismaService.user.findFirst({ where: { email }});
+        return !!userFromDb;
+    }
+
+    private async convertUserToCreateDtoToPrismaUser(userToCreateDto: UserToCreateDto): Promise<Prisma.UserCreateInput> {
+        const passwordHash: string = await argon2.hash(userToCreateDto.password);
+        const { password, repeatPassword, name, surname, ...rest } = userToCreateDto;
+
+        return { passwordHash, name: name ?? '', surname: surname ?? '',  ...rest };
+    }
+
     private async validateUser(userToLoginDto: UserToLoginDto): Promise<boolean> {
         const userFromDb = await this.prismaService.user.findFirst({ where: { email: userToLoginDto.email } });
 
         if (!userFromDb) {
-            throw new BadRequestException('Email doesnt exist. Login first');
+            throw new BadRequestException('Email doesnt exist. Register first');
         }
 
         return await argon2.verify(userFromDb.passwordHash, userToLoginDto.password);

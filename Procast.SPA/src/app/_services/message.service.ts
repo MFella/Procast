@@ -14,6 +14,7 @@ export class MessageService {
   constructor(
     private readonly translateService: TranslateService
   ) {
+    Notify.init({ position: 'right-bottom' });
   }
 
   notify(translateKey: string, notifyEvent: NotifyEvent): void {

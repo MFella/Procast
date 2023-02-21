@@ -10,6 +10,7 @@
   },
   "private": true,
   "dependencies": {
+    "@abacritt/angularx-social-login": "1.2",
     "@angular/animations": "^14.0.0",
     "@angular/cdk": "^14.2.5",
     "@angular/common": "^14.0.0",
@@ -25,6 +26,7 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@ngneat/transloco": "^4.1.1",
+    "@ngrx/store": "^14.0.0",
     "@ngx-translate/core": "^14.0.0",
     "@ngx-translate/http-loader": "^7.0.0",
     "@webcomponents/custom-elements": "^1.0.0",
