@@ -1,0 +1,17 @@
+<!-- <div class="sidebar-container container">
+    <div *ngFor="let section of sections">
+        <h3 (click)="section[1].onClick()">{{ section[0] | translate }}</h3>
+        <div *ngFor="let item of section[1].options">
+            <strong>{{ item.title | translate }}</strong>
+        </div>
+    </div>
+</div> -->
+
+
+<div class="sidebar-container container">
+    <div *ngFor="let section of sections">
+        <pc-sidebar-section [section]="section" 
+        [position]="position">
+        </pc-sidebar-section>
+    </div>
+</div>

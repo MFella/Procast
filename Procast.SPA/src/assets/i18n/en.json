@@ -27,6 +27,10 @@
   "PC_AUTH_SIGN_UP_CONTAINER_PASSWORD_LABEL": "Password",
   "PC_AUTH_SIGN_UP_CONTAINER_REPEAT_PASSWORD_LABEL": "Repeat password",
   "PC_AUTH_SIGN_UP_CONTAINER_SUBMIT_BUTTON_LABEL": "Sign up",
-  "PC_AUTH_SIGN_UP_ACTION_SUCCESS_MESSAGE" : "You have been registered successfully",
-  "PC_AUTH_LOGOUT_INFO_MESSAGE": "You have been logged out"
+  "PC_AUTH_SIGN_UP_ACTION_SUCCESS_MESSAGE" : "You have been logged in successfully",
+  "PC_AUTH_LOGOUT_INFO_MESSAGE": "You have been logged out",
+  "PC_AUTH_SIGN_UP_ACTION_FAILURE_MESSAGE": "Error occured during retriving data",
+  "PC_MY_DATA_SIDEBAR_SECTION_DATA_SETS_TITLE": "Data sets",
+  "PC_MY_DATA_SIDEBAR_SECTION_GROUPS_TITLE": "Groups",
+  "PC_MY_DATA_SIDEBAR_SECTION_DATA_TITLE": "Data"
 }

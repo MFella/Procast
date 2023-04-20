@@ -24,15 +24,20 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDividerModule } from '@angular/material/divider';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AuthInterceptor } from './_interceptors/auth.interceptor';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { StoreModule } from '@ngrx/store';
 import {
   GoogleLoginProvider,
   FacebookLoginProvider,
 } from '@abacritt/angularx-social-login';
+import { MatTreeModule } from '@angular/material/tree';
 import {
   SocialLoginModule,
   SocialAuthServiceConfig,
 } from '@abacritt/angularx-social-login';
+import { SidebarSectionComponent } from './generics/display/sidebar-section/sidebar-section.component';
+import { SidebarComponent } from './generics/display/sidebar/sidebar.component';
+import { MatTreeManager } from './utils/structural/tree/matTreeManager';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -46,6 +51,11 @@ const googleOauthPayload = {
   scopes: ['profile', 'email'],
 };
 
+const facebookOauthPayload = {
+  appId: '755899472536049',
+  appSecret: '3f808f589ce6a701fb1a140a9debae51',
+};
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -55,6 +65,8 @@ const googleOauthPayload = {
     MyDataComponent,
     MyForecastsComponent,
     AuthComponent,
+    SidebarComponent,
+    SidebarSectionComponent,
   ],
   imports: [
     SocialLoginModule,
@@ -77,6 +89,8 @@ const googleOauthPayload = {
     MatInputModule,
     MatDividerModule,
     ReactiveFormsModule,
+    MatExpansionModule,
+    MatTreeModule,
     StoreModule.forRoot({}, {}),
   ],
   providers: [
@@ -92,7 +106,7 @@ const googleOauthPayload = {
           },
           {
             id: FacebookLoginProvider.PROVIDER_ID,
-            provider: new FacebookLoginProvider('clientId'),
+            provider: new FacebookLoginProvider(facebookOauthPayload.appId),
           },
         ],
         onError: (err) => {
@@ -100,6 +114,7 @@ const googleOauthPayload = {
         },
       } as SocialAuthServiceConfig,
     },
+    MatTreeManager,
   ],
   bootstrap: [AppComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],

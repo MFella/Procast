@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,25 +9,20 @@ import {
   Validators,
 } from '@angular/forms';
 import { AuthService } from './auth.service';
-import { Single } from '../utils/single';
+import { Single } from '../utils/behavior/single';
 import { UserToCreateDto } from '../dtos/userToCreate.dto';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MessageService } from '../_services/message.service';
 import { Router } from '@angular/router';
 import { UserToLoginDto } from '../dtos/userToLogin.dto';
-import { firstValueFrom, map, of, queue } from 'rxjs';
-import {
-  GoogleLoginProvider,
-  SocialAuthService,
-  SocialUser,
-} from '@abacritt/angularx-social-login';
+import { firstValueFrom, map, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'pc-auth',
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.scss'],
 })
-export class AuthComponent implements OnInit {
+export class AuthComponent implements OnInit, OnDestroy {
   private static readonly EMAIL_PATTERN: string =
     '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$';
   private static readonly PASSWORD_PATTERN: string =
@@ -42,16 +37,23 @@ export class AuthComponent implements OnInit {
     Validators.pattern(AuthComponent.PASSWORD_PATTERN),
   ];
 
+  onDestroy$: Subject<void> = new Subject<void>();
+
   constructor(
     private readonly formBuilder: FormBuilder,
     private readonly authService: AuthService,
     private readonly messageService: MessageService,
     private readonly router: Router
-  ) {}
+  ) {
+    this.observeOAuthStateChanged();
+  }
 
   ngOnInit(): void {
     this.setForms();
-    this.observeOAuthStateChanged();
+  }
+
+  ngOnDestroy(): void {
+    this.onDestroy$.next();
   }
 
   isLoginFormInputInvalid(
@@ -110,38 +112,42 @@ export class AuthComponent implements OnInit {
 
   submitRegisterUser(): void {
     const userToRegister = this.getUserToRegister();
-    Single.from(this.authService.registerUser(userToRegister)).subscribe({
-      next: () => {
-        this.messageService.notify(
-          'PC_AUTH_SIGN_UP_ACTION_SUCCESS_MESSAGE',
-          'success'
-        );
-        this.router.navigate(['home']);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.messageService.notify(error.error, 'failure');
-      },
-    });
+    Single.from(this.authService.registerUser(userToRegister))
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.notify(
+            'PC_AUTH_SIGN_UP_ACTION_SUCCESS_MESSAGE',
+            'success'
+          );
+          this.router.navigate(['home']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.messageService.notify(error.error, 'failure');
+        },
+      });
   }
 
   submitLoginUser(): void {
     const userToLogin: UserToLoginDto = this.getUserToLogin();
 
-    Single.from(this.authService.loginUser(userToLogin)).subscribe({
-      next: () => {
-        this.messageService.notify(
-          'PC_AUTH_LOGIN_ACTION_SUCCESS_MESSAGE',
-          'success'
-        );
-        this.router.navigate(['home']);
-      },
-      error: (_error: HttpErrorResponse) => {
-        this.messageService.notify(
-          'PC_AUTH_LOGIN_ACTION_ERROR_CREDS_NOT_MATCH_MESSAGE',
-          'failure'
-        );
-      },
-    });
+    Single.from(this.authService.loginUser(userToLogin))
+      // .pipe(takeUntil(useOnDestroy()))
+      .subscribe({
+        next: () => {
+          this.messageService.notify(
+            'PC_AUTH_LOGIN_ACTION_SUCCESS_MESSAGE',
+            'success'
+          );
+          this.router.navigate(['home']);
+        },
+        error: (_error: HttpErrorResponse) => {
+          this.messageService.notify(
+            'PC_AUTH_LOGIN_ACTION_ERROR_CREDS_NOT_MATCH_MESSAGE',
+            'failure'
+          );
+        },
+      });
   }
 
   getRegisterFormErrorTranslationKey(
@@ -160,13 +166,32 @@ export class AuthComponent implements OnInit {
     return '';
   }
 
+  loginWithFacebook(): void {
+    this.authService.loginWithFacebook();
+  }
+
   private observeOAuthStateChanged(): void {
     this.authService
       .observeOAuthStateChanged()
-      .subscribe((socialUser: SocialUser) => {
-        console.log('received', socialUser);
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.notify(
+            'PC_AUTH_SIGN_UP_ACTION_SUCCESS_MESSAGE',
+            'success'
+          );
+          this.router.navigate(['home']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.messageService.notify(
+            'PC_AUTH_SIGN_UP_ACTION_FAILURE_MESSAGE',
+            'failure'
+          );
+          console.error(error);
+        },
       });
   }
+
   private setForms(): void {
     this.loginForm = this.formBuilder.group<LoginFormControlTypes>({
       email: new FormControl('', [

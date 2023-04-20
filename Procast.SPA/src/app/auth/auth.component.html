@@ -28,8 +28,8 @@
           </div>
         </div>
         <div class="oauth-container flex flex-col mt-8 gap-4">
-          <asl-google-signin-button class="flex justify-center" type="standard" size="large" text="continue_with" theme="filled_blue"> </asl-google-signin-button>
-          <button class="oauth-container__action-button" mat-raised-button color="primary">
+          <asl-google-signin-button class="flex justify-center" type="standard" size="large" text="signin_with" theme="filled_black"> </asl-google-signin-button>
+          <button (click)="loginWithFacebook()" class="oauth-container__action-button" mat-raised-button color="primary">
             <img class="oauth-container__action-button__icon" src="/assets/icons/facebook-icon.svg" alt="facebook-icon">
             <span class="oauth-container__action-button__label">{{'PC_AUTH_OAUTH_CONTAINER_FACEBOOK_BUTTON_LABEL' | translate}}</span>
           </button>

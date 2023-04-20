@@ -1,0 +1,41 @@
+    <!-- <mat-expansion-panel class="sidebar-section">
+        <h3>{{ title | translate }}</h3>
+        <hr>
+        <div class="inline-flex" *ngFor="let option of options">
+            <mat-icon *ngIf="option.iconClass && option.iconPosition === 'left'">{{ option.iconClass }}</mat-icon>
+            <strong>{{ option.title | translate }}</strong>
+            <mat-icon *ngIf="option.iconClass && option.iconPosition === 'right'">{{ option.iconClass }}</mat-icon>
+        </div>
+    </mat-expansion-panel> -->
+
+<!-- <mat-expansion-panel (opened)="panelOpenState = true"
+                        (closed)="panelOpenState = false">
+                        <mat-expansion-panel-header>
+                            <div class="flex justify-between items center">
+                                <mat-panel-title class="absolute">
+                                    <span>Self aware panel</span>
+                                </mat-panel-title>
+                            </div>
+    </mat-expansion-panel-header>
+</mat-expansion-panel> -->
+
+<mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+    <!-- This is the tree node template for leaf nodes -->
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding (click)="node?.onClick()">
+      <!-- use a disabled button to provide padding for tree leaf -->
+      <mat-icon *ngIf="node.iconClass && node.iconPosition === 'left'">
+        {{ node.iconClass }}
+      </mat-icon>
+      {{node.name}}
+    </mat-tree-node>
+    <!-- This is the tree node template for expandable nodes -->
+    <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+      <button mat-icon-button matTreeNodeToggle
+              [attr.aria-label]="'Toggle ' + node.name">
+        <mat-icon class="mat-icon-rtl-mirror" *ngIf="node?.withChevron">
+          {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+        </mat-icon>
+      </button>
+        <strong>{{node.name}}</strong>
+    </mat-tree-node>
+  </mat-tree>

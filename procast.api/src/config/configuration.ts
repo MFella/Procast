@@ -25,6 +25,7 @@ const supabaseSetupConfig: SupabaseConfig = {
   SUPABASE_JWT_SECRET:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1bnJ0bWtjbnZtbGx3Z2d3a3ByIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY3MDk2MzU1MSwiZXhwIjoxOTg2NTM5NTUxfQ.ki3fhwT1kRjn3CwGunqS0qp_oArfMAz7b17RROFvEnI",
 };
+
 const googleOauthPayload: GoogleOauthPayload = {
   clientId: "187695350870-ar0g3ng5fvum5k58vt5tc2s72h3lu4lf.apps.googleusercontent.com",
   clientSecret: "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",
