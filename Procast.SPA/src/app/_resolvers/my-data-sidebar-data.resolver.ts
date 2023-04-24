@@ -12,6 +12,7 @@ import {
 import { Observable, of } from 'rxjs';
 import { SidebarDataResolver } from '../generics/display/sidebar/resolvers/sidebarDataResolver';
 import { SidebarConfig } from '../generics/display/sidebar/types/sidebarConfig';
+import { SidebarManagerService } from '../_services/sidebar/sidebar-manager.service';
 
 @Injectable({
   providedIn: 'root',
@@ -25,7 +26,7 @@ export class MyDataSidebarDataResolver
     'PC_MY_DATA_SIDEBAR_SECTION_DATA_TITLE',
   ];
 
-  constructor() {}
+  constructor(private readonly sidebarManagerService: SidebarManagerService) {}
 
   resolve(
     _route: ActivatedRouteSnapshot,
@@ -45,12 +46,18 @@ export class MyDataSidebarDataResolver
     const sidebarSections: Array<SidebarSection> = [];
 
     for (const title of this.sectionTitles) {
+      const sectionId: string = self.crypto.randomUUID();
       const section = {
         title,
         withChevron: true,
         options: this.getSectionOptions(4),
+        id: sectionId,
         onClick: () => console.log('Section title clicked'),
       };
+      this.sidebarManagerService.saveSectionIdToOptions(
+        sectionId,
+        section.options.map((option) => option.id)
+      );
       sidebarSections.push(section);
     }
 
@@ -61,11 +68,16 @@ export class MyDataSidebarDataResolver
     const sectionOptions: Array<SidebarSectionOption> = [];
 
     for (const i in [...Array(optionCount).keys()]) {
+      const sectionId: string = self.crypto.randomUUID();
       sectionOptions.push({
         title: (`OPTION_TITLE_` + i) as Uppercase<string>,
         iconClass: 'visibility',
         iconPosition: 'left',
-        onClick: () => console.log('Option section clicked'),
+        onClick: (wtf) => {
+          this.sidebarManagerService.emitOptionClicked(sectionId);
+          console.log(wtf);
+        },
+        id: sectionId,
       });
     }
 

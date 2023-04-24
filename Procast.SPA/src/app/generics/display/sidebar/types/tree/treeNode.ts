@@ -4,6 +4,7 @@ export type TreeNode = {
   withChevron?: boolean;
   iconClass?: string;
   iconPosition?: Position;
-  onClick: (...args: Array<unknown>) => void;
+  onClick: (...args: Array<string>) => void;
   children?: TreeNode[];
+  id: string;
 };

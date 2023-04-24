@@ -1,3 +1,5 @@
+import { distinctUntilChanged, filter } from 'rxjs';
+import { SidebarManagerService } from './../../../_services/sidebar/sidebar-manager.service';
 import { Position } from './../sidebar/types/position';
 import { SidebarSection } from './../sidebar/types/sidebarConfig';
 import {
@@ -30,6 +32,8 @@ export class SidebarSectionComponent implements OnInit {
   @Input()
   position!: Position;
 
+  selectedOptionId: string = '';
+
   panelOpenState: boolean = false;
 
   treeFlatConfig!: MatTreeFlatConfig;
@@ -39,11 +43,13 @@ export class SidebarSectionComponent implements OnInit {
 
   constructor(
     private readonly matTreeManager: MatTreeManager,
+    private readonly sidebarManagerService: SidebarManagerService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.setTreeData();
+    this.observeOptionClicked();
   }
 
   private async setTreeData(): Promise<void> {
@@ -58,7 +64,6 @@ export class SidebarSectionComponent implements OnInit {
 
     this.dataSource = dataSource;
     this.treeControl = treeControl;
-    console.log(this.section);
     this.changeDetectorRef.detectChanges();
   }
 
@@ -98,6 +103,16 @@ export class SidebarSectionComponent implements OnInit {
       iconClass: treeNode.iconClass,
       iconPosition: treeNode.iconPosition,
       onClick: treeNode.onClick,
+      id: treeNode.id,
     };
+  }
+
+  private observeOptionClicked(): void {
+    this.sidebarManagerService
+      .observeOptionClicked(this.section.id)
+      .pipe(filter(Boolean), distinctUntilChanged())
+      .subscribe((optionId: string) => {
+        this.selectedOptionId = optionId;
+      });
   }
 }

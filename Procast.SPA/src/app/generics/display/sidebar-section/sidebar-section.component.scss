@@ -1,0 +1,8 @@
+.mat-tree-node {
+    &.option-unselected {
+        :hover {
+            @apply cursor-pointer;
+            transition: all .4s;
+        }
+    }
+}

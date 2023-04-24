@@ -6,5 +6,6 @@ export type FlatNode = {
   withChevron?: boolean;
   iconClass?: string;
   iconPosition?: Position;
-  onClick?: (...args: Array<unknown>) => void;
+  onClick?: (...args: Array<string>) => void;
+  id: string;
 };

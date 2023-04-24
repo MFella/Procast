@@ -46,6 +46,7 @@ export class MatTreeManager {
       name: await firstValueFrom(this.translateService.get(section.title)),
       onClick: section.onClick,
       children: [],
+      id: section.id,
     };
 
     parentTreeNode.children = (await Promise.all(
@@ -57,6 +58,7 @@ export class MatTreeManager {
           iconClass: option.iconClass,
           iconPosition: option.iconPosition,
           onClick: option.onClick,
+          id: option.id,
         };
       })
     )) as Array<TreeNode>;

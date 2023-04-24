@@ -20,15 +20,13 @@
 </mat-expansion-panel> -->
 
 <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-    <!-- This is the tree node template for leaf nodes -->
-    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding (click)="node?.onClick()">
-      <!-- use a disabled button to provide padding for tree leaf -->
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding (click)="node?.onClick(node)"
+    [ngClass]="{'option-selected': selectedOptionId === node?.id, 'option-unselected': selectedOptionId !== node?.id}">
       <mat-icon *ngIf="node.iconClass && node.iconPosition === 'left'">
         {{ node.iconClass }}
       </mat-icon>
-      {{node.name}}
+      <span class="pl-2 px-2 w-full mr-2">{{node.name}}</span>
     </mat-tree-node>
-    <!-- This is the tree node template for expandable nodes -->
     <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
       <button mat-icon-button matTreeNodeToggle
               [attr.aria-label]="'Toggle ' + node.name">
