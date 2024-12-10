@@ -1,0 +1,42 @@
+<section>
+  <div class="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8 h-screen">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 h-full">
+      <div
+        class="bg-blue-600 p-8 md:p-12 lg:px-16 lg:py-24 rounded-l-xl shadow-lg"
+      >
+        <div
+          class="mx-auto max-w-xl text-center h-full flex flex-col justify-center"
+        >
+          <h2 class="text-2xl font-bold text-white md:text-3xl">
+            Have you ever wondered what the future might look like?
+          </h2>
+
+          <p class="hidden text-white/90 sm:mt-4 sm:block">
+            With procast, you can easily predict it based on past data. Give it
+            a try!
+          </p>
+
+          <div class="mt-4 md:mt-8">
+            <a
+              [routerLink]="['workspace']"
+              class="inline-block rounded border border-white bg-white px-12 py-3 text-sm font-medium text-blue-500 transition hover:bg-transparent hover:text-white focus:outline-none focus:ring focus:ring-yellow-400"
+            >
+              🧪 Create analysis
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full h-full p-8">
+        <canvas
+          baseChart
+          [type]="'line'"
+          [data]="lineChartData"
+          [options]="lineChartOptions"
+          [legend]="lineChartLegend"
+        >
+        </canvas>
+      </div>
+    </div>
+  </div>
+</section>
