@@ -7,4 +7,5 @@ export type WorksheetRowData = {
 
 export type WorksheetColDef = Record<'field', keyof WorksheetRowData> & {
   width?: number;
+  editable?: boolean;
 };

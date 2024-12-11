@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
+import { MatDialog } from '@angular/material/dialog';
+import { LoadDataComponent } from '../load-data/load-data.component';
 
 @Component({
   selector: 'app-workspace',
@@ -11,6 +13,12 @@ import { WorksheetComponent } from '../worksheet/worksheet.component';
   styleUrl: './workspace.component.scss',
 })
 export class WorkspaceComponent implements OnInit {
+  private readonly matDialog = inject(MatDialog);
+  private loadedData: Array<any> = [];
+  basicLayers: Array<string> = ['LSTM', 'GRU', 'SimpleRNN'];
+
+  helpLayers: Array<string> = ['Dropout', 'BatchNormalization'];
+
   private skipped = (ctx: any, value: any) =>
     ctx.p0.skip || ctx.p1.skip ? value : undefined;
   private down = (ctx: any, value: any) =>
@@ -69,5 +77,17 @@ export class WorkspaceComponent implements OnInit {
       // Use the model to do inference on a data point the model hasn't seen before:
       const result = model.predict(tf.tensor2d([5], [1, 1])) as tf.Tensor;
     });
+  }
+
+  openLoadDataModal(): void {
+    this.matDialog.open(LoadDataComponent, {
+      width: '500px',
+      enterAnimationDuration: 200,
+      exitAnimationDuration: 300,
+    });
+  }
+
+  loadData(): void {
+    ///
   }
 }
