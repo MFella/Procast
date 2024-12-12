@@ -1,3 +1,4 @@
+@use '@angular/material' as mat;
 /* Core Data Grid CSS */
 @import 'ag-grid-community/styles/ag-grid.css';
 /* Quartz Theme Specific CSS */
@@ -6,5 +7,25 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$blue-palette,
+        tertiary: mat.$magenta-palette,
+        theme-type: light,
+      ),
+      typography: Roboto,
+      density: -5,
+    )
+  );
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
