@@ -1,3 +1,5 @@
+import { ChartType } from 'chart.js';
+
 export type HelpLayer = 'Dropout' | 'BatchNormalization';
 export type BasicLayer = 'LSTM' | 'GRU' | 'SimpleRNN';
 
@@ -12,10 +14,14 @@ export type Optimizer =
   | 'adadelta'
   | 'momentum';
 
-type GenericLayer = BasicLayer | HelpLayer;
-type PredictConfigEntity = GenericLayer | LossFn | Optimizer;
+export type ShowLegend = 'Yes' | 'No';
 
-export type PredictConfigSelectOption<T extends PredictConfigEntity> = {
+type GenericLayer = BasicLayer | HelpLayer;
+type TrainingConfigEntity = GenericLayer | LossFn | Optimizer;
+type ChartConfigEntity = ChartType | ShowLegend;
+type GeneralConfigEntity = TrainingConfigEntity | ChartConfigEntity;
+
+export type GeneralConfigSelectOption<T extends GeneralConfigEntity> = {
   value: T;
   viewValue: string;
 };

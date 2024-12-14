@@ -1,6 +1,13 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  Renderer2,
+} from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
-import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -20,18 +27,27 @@ import {
   HelpLayer,
   LossFn,
   Optimizer,
-  PredictConfigSelectOption,
+  GeneralConfigSelectOption,
+  ShowLegend,
 } from '../_typings/workspace/sidebar-config.typings';
 import { NgStyle } from '@angular/common';
 import { LocalStorageService } from '../local-storage.service';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
-type TraningfConfigFormGroup = {
+type TrainingConfigFormGroup = {
   basicLayer: FormControl<BasicLayer | null>;
   helpLayer: FormControl<HelpLayer | null>;
   lossFn: FormControl<LossFn | null>;
   optimizer: FormControl<Optimizer | null>;
 };
+
+type ChartConfigFormGroup = {
+  chartType: FormControl<ChartType | null>;
+  showLegend: FormControl<boolean | null>;
+};
+
 @Component({
   selector: 'app-workspace',
   imports: [
@@ -43,6 +59,7 @@ type TraningfConfigFormGroup = {
     FormsModule,
     ReactiveFormsModule,
     NgStyle,
+    MatCheckboxModule,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
@@ -50,19 +67,26 @@ type TraningfConfigFormGroup = {
 export class WorkspaceComponent implements OnInit {
   private readonly localStorageService = inject(LocalStorageService);
   private readonly matDialog = inject(MatDialog);
+  private readonly renderer2 = inject(Renderer2);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  #destroyRef = inject(DestroyRef);
   private loadedData: Array<any> = [];
 
-  traningConfigFormGroup = new FormGroup<TraningfConfigFormGroup>({
+  traningConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
     basicLayer: new FormControl('GRU', [Validators.required]),
     helpLayer: new FormControl('Dropout', [Validators.required]),
     lossFn: new FormControl('meanSquaredError', [Validators.required]),
     optimizer: new FormControl('momentum', [Validators.required]),
   });
 
+  chartConfigFormGroup = new FormGroup<ChartConfigFormGroup>({
+    showLegend: new FormControl(false, [Validators.required]),
+    chartType: new FormControl('line', [Validators.required]),
+  });
+
   isExpanded = false;
 
-  basicLayerOptions: Array<PredictConfigSelectOption<BasicLayer>> = [
+  basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> = [
     {
       value: 'GRU',
       viewValue: 'GRU',
@@ -77,7 +101,7 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
-  helpLayerOptions: Array<PredictConfigSelectOption<HelpLayer>> = [
+  helpLayerOptions: Array<GeneralConfigSelectOption<HelpLayer>> = [
     {
       value: 'Dropout',
       viewValue: 'Dropout',
@@ -88,7 +112,7 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
-  lossFnOptions: Array<PredictConfigSelectOption<LossFn>> = [
+  lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = [
     {
       value: 'meanSquaredError',
       viewValue: 'Mean Squared Error',
@@ -103,7 +127,7 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
-  optimizerOptions: Array<PredictConfigSelectOption<Optimizer>> = [
+  optimizerOptions: Array<GeneralConfigSelectOption<Optimizer>> = [
     {
       value: 'sgd',
       viewValue: 'Stochastic Gradient Descent',
@@ -130,11 +154,45 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
+  chartTypeOptions: Array<GeneralConfigSelectOption<ChartType>> = [
+    {
+      value: 'bar',
+      viewValue: 'Bar',
+    },
+    {
+      value: 'line',
+      viewValue: 'Line',
+    },
+    {
+      value: 'pie',
+      viewValue: 'Pie',
+    },
+    {
+      value: 'radar',
+      viewValue: 'Radar',
+    },
+    {
+      value: 'scatter',
+      viewValue: 'Scatter',
+    },
+  ];
+
+  showLegendOptions: Array<GeneralConfigSelectOption<ShowLegend>> = [
+    {
+      value: 'Yes',
+      viewValue: 'Yes',
+    },
+    {
+      value: 'No',
+      viewValue: 'No',
+    },
+  ];
+
   private skipped = (ctx: any, value: any) =>
     ctx.p0.skip || ctx.p1.skip ? value : undefined;
   private down = (ctx: any, value: any) =>
     ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
-  public lineChartData: ChartConfiguration<'line'>['data'] = {
+  lineChartData: ChartConfiguration<'line'>['data'] = {
     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
     datasets: [
       {
@@ -154,7 +212,8 @@ export class WorkspaceComponent implements OnInit {
       },
     ],
   };
-  public lineChartOptions: ChartOptions<'line'> = {
+
+  lineChartOptions: ChartOptions<ChartType> = {
     responsive: true,
     maintainAspectRatio: false,
     // aspectRatio: 1,
@@ -169,10 +228,12 @@ export class WorkspaceComponent implements OnInit {
     },
   };
 
-  public lineChartLegend = true;
+  lineChartLegend = true;
 
   ngOnInit(): void {
-    this.loadConfigFromLocalStorage();
+    this.loadConfigsFromLocalStorage();
+    this.observeTrainingConfigChanged();
+    this.observeChartConfigChanged();
   }
 
   openLoadDataModal(): void {
@@ -206,13 +267,19 @@ export class WorkspaceComponent implements OnInit {
     /// To implement
   }
 
-  private loadConfigFromLocalStorage(): void {
+  private loadConfigsFromLocalStorage(): void {
     this.traningConfigFormGroup.setValue({
       basicLayer: this.localStorageService.getItem('basicLayer') ?? 'GRU',
       helpLayer: this.localStorageService.getItem('helpLayer') ?? 'Dropout',
       lossFn: this.localStorageService.getItem('lossFn') ?? 'meanSquaredError',
       optimizer: this.localStorageService.getItem('optimizer') ?? 'momentum',
     });
+
+    this.chartConfigFormGroup.setValue({
+      chartType: this.localStorageService.getItem('chartType') ?? 'line',
+      showLegend: this.localStorageService.getItem('showLegend'),
+    });
+
     this.saveTrainigConfigToLocalStorage();
   }
 
@@ -226,5 +293,56 @@ export class WorkspaceComponent implements OnInit {
         ])
       )
     );
+  }
+
+  private observeTrainingConfigChanged(): void {
+    this.traningConfigFormGroup.valueChanges
+      .pipe(takeUntilDestroyed(this.#destroyRef))
+      .subscribe((formGroupValue) => {
+        this.saveConfigToLocalStorage(formGroupValue);
+      });
+  }
+
+  private observeChartConfigChanged(): void {
+    this.chartConfigFormGroup.valueChanges
+      .pipe(takeUntilDestroyed(this.#destroyRef))
+      .subscribe((formGroupValue) => {
+        this.saveConfigToLocalStorage(formGroupValue);
+      });
+  }
+
+  private saveConfigToLocalStorage<
+    T extends keyof LocalStorageMappings
+  >(formGroupValue: { [Key in T]?: LocalStorageMappings[Key] | null }): void {
+    const formValueMap = new Map<
+      keyof LocalStorageMappings,
+      LocalStorageMappings[keyof LocalStorageMappings]
+    >();
+    Object.entries(formGroupValue).forEach(([key, value]) =>
+      formValueMap.set(
+        key as keyof LocalStorageMappings,
+        value as LocalStorageMappings[keyof LocalStorageMappings]
+      )
+    );
+    this.localStorageService.setItems(formValueMap);
+  }
+
+  toggleAnimation(
+    listRef: HTMLUListElement,
+    detailsRef: HTMLDetailsElement
+  ): void {
+    setTimeout(() => {
+      if (typeof detailsRef.open === 'boolean') {
+        const animationClasses = ['fade-in', 'fade-out'];
+        this.renderer2.removeClass(
+          listRef,
+          animationClasses[detailsRef.open ? 1 : 0]
+        );
+        this.renderer2.addClass(
+          listRef,
+          animationClasses[detailsRef.open ? 0 : 1]
+        );
+      }
+    });
   }
 }

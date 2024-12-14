@@ -1,8 +1,10 @@
+import { ChartType } from 'chart.js';
 import {
   BasicLayer,
   HelpLayer,
   LossFn,
   Optimizer,
+  ShowLegend,
 } from '../workspace/sidebar-config.typings';
 
 export type LocalStorageMappings = {
@@ -10,4 +12,6 @@ export type LocalStorageMappings = {
   helpLayer: HelpLayer;
   lossFn: LossFn;
   optimizer: Optimizer;
+  showLegend: boolean;
+  chartType: ChartType;
 };

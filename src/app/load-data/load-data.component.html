@@ -1,4 +1,12 @@
-<div class="p-4 flex flex-col">
+<div class="p-8 flex flex-col relative">
+  <button
+    class="!absolute !flex right-4 top-4"
+    mat-icon-button
+    [mat-dialog-close]="true"
+    aria-label="Close button"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
   <div class="flex items-center justify-center w-full">
     <label
       for="dropzone-file"
@@ -32,10 +40,9 @@
   </div>
   <hr class="my-4" />
   <button mat-fab extended>
-    <mat-icon>google</mat-icon>
-    Load from google
+    🚀 Example data
     <div
-      class="dupa absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
+      class="absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
     ></div>
   </button>
 </div>
