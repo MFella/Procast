@@ -2,6 +2,13 @@ import { ChartType } from 'chart.js';
 
 export type HelpLayer = 'Dropout' | 'BatchNormalization';
 export type BasicLayer = 'LSTM' | 'GRU' | 'SimpleRNN';
+export type TensorflowLayerFnMappings = {
+  ['LSTM']: 'lstm';
+  ['GRU']: 'gru';
+  ['SimpleRNN']: 'simpleRNN';
+  ['Dropout']: 'dropout';
+  ['BatchNormalization']: 'batchNormalization';
+};
 
 type LossRegressionFn = 'meanSquaredError' | 'meanAbsoluteError' | 'huberLoss';
 

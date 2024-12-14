@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular'; // Angular Data Grid Component
-import { ColDef, GridOptions, GridReadyEvent } from 'ag-grid-community';
+import { Component, Input, OnInit } from '@angular/core';
+import { AgGridModule } from 'ag-grid-angular'; // Angular Data Grid Component
+import { GridOptions, GridReadyEvent } from 'ag-grid-community';
 import {
   WorksheetColDef,
   WorksheetRowData,
@@ -12,27 +12,34 @@ import {
   templateUrl: './worksheet.component.html',
   styleUrl: './worksheet.component.scss',
 })
-export class WorksheetComponent {
-  rowData: Array<WorksheetRowData> = [
-    { make: 'Tesla', model: 'Model Y', price: 64950, electric: true },
-    { make: 'Ford', model: 'F-Series', price: 33850, electric: false },
-    { make: 'Toyota', model: 'Corolla', price: 29600, electric: false },
-    { make: 'Toyota', model: 'Corolla', price: 29600, electric: false },
-    { make: 'Toyota', model: 'Corolla', price: 29600, electric: false },
-  ];
+export class WorksheetComponent implements OnInit {
+  @Input({ required: true })
+  worksheetData!: Array<WorksheetRowData>;
+
+  monthsInYear = Array.from({ length: 12 }, (item, i) => {
+    return new Date(0, i).toLocaleString('en-US', { month: 'long' });
+  });
+
+  rowData: Array<WorksheetRowData> = [];
 
   colDefs: Array<WorksheetColDef> = [
-    { field: 'make', editable: true },
-    { field: 'model' },
-    { field: 'price' },
-    { field: 'electric', width: 100 },
+    { field: 'label', editable: true },
+    { field: 'value', editable: true },
   ];
 
   gridOptions: GridOptions = {
     // isFullWidthRow: () => true,
   };
 
+  ngOnInit(): void {
+    this.generateMockData();
+  }
+
   onGridReady($event: GridReadyEvent): void {
     $event.api.sizeColumnsToFit();
+  }
+
+  generateMockData(): void {
+    // this.rowData =
   }
 }

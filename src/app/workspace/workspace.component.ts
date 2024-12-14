@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   DestroyRef,
@@ -30,17 +31,20 @@ import {
   GeneralConfigSelectOption,
   ShowLegend,
 } from '../_typings/workspace/sidebar-config.typings';
-import { NgStyle } from '@angular/common';
 import { LocalStorageService } from '../local-storage.service';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { NgClass } from '@angular/common';
+import { WorksheetRowData } from '../_typings/worksheet.typings';
+import { TrainingConverter } from '../_helpers/training-converter';
 
 type TrainingConfigFormGroup = {
   basicLayer: FormControl<BasicLayer | null>;
   helpLayer: FormControl<HelpLayer | null>;
   lossFn: FormControl<LossFn | null>;
   optimizer: FormControl<Optimizer | null>;
+  learningRate?: FormControl<number | null>;
 };
 
 type ChartConfigFormGroup = {
@@ -58,25 +62,36 @@ type ChartConfigFormGroup = {
     MatInputModule,
     FormsModule,
     ReactiveFormsModule,
-    NgStyle,
     MatCheckboxModule,
+    NgClass,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceComponent implements OnInit {
+  private static readonly MOMENTUM_DEFAULT = 20;
+  private static readonly LEARNING_RATE_DEFAULT = 0.001;
+  private static readonly OPTIMIZER_DEFAULT: Optimizer = 'momentum';
+  private static readonly LOSS_FN_DEFAULT: LossFn = 'meanSquaredError';
+  private static readonly BASIC_LAYER_DEFAULT: BasicLayer = 'LSTM';
+  private static readonly HELP_LAYER_DEFAULT: HelpLayer = 'Dropout';
+
   private readonly localStorageService = inject(LocalStorageService);
   private readonly matDialog = inject(MatDialog);
   private readonly renderer2 = inject(Renderer2);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   #destroyRef = inject(DestroyRef);
   private loadedData: Array<any> = [];
+  worksheetData: Array<WorksheetRowData> = [];
+  isPredictionInProgress = false;
 
   traningConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
     basicLayer: new FormControl('GRU', [Validators.required]),
     helpLayer: new FormControl('Dropout', [Validators.required]),
     lossFn: new FormControl('meanSquaredError', [Validators.required]),
     optimizer: new FormControl('momentum', [Validators.required]),
+    learningRate: new FormControl(0.001, []),
   });
 
   chartConfigFormGroup = new FormGroup<ChartConfigFormGroup>({
@@ -85,6 +100,10 @@ export class WorkspaceComponent implements OnInit {
   });
 
   isExpanded = false;
+  isLearningRateExcluded = false;
+  excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta', 'adam'];
+  canStartPrediction = false;
+  canSaveResults = false;
 
   basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> = [
     {
@@ -245,12 +264,43 @@ export class WorkspaceComponent implements OnInit {
   }
 
   generatePrediction(): void {
-    // Define a model for linear regression.
+    let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
+      this.traningConfigFormGroup.value;
+    optimizer ??= WorkspaceComponent.OPTIMIZER_DEFAULT;
+    learningRate ??= WorkspaceComponent.LEARNING_RATE_DEFAULT;
+    lossFn ??= WorkspaceComponent.LOSS_FN_DEFAULT;
+    helpLayer ??= WorkspaceComponent.HELP_LAYER_DEFAULT;
+    basicLayer ??= WorkspaceComponent.BASIC_LAYER_DEFAULT;
+    // Define a model for linear regression
     const model = tf.sequential();
-    model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
+    const basicLayerMethod =
+      TrainingConverter.convertLayerToTensorFn<BasicLayer>(basicLayer);
+    const helpLayerMethod =
+      TrainingConverter.convertLayerToTensorFn<HelpLayer>(helpLayer);
+    model.add(
+      tf.layers[basicLayerMethod]({
+        units: 50,
+        returnSequences: false,
+        inputShape: [24, 1],
+      })
+    );
+
+    model.add(
+      tf.layers[helpLayerMethod]({
+        rate: 0.2,
+      })
+    );
+    //
+    model.add(tf.layers.dense({ units: 1 }));
 
     // Prepare the model for training: Specify the loss and the optimizer.
-    model.compile({ loss: 'meanSquaredError', optimizer: 'sgd' });
+    model.compile({
+      loss: 'meanSquaredError',
+      optimizer:
+        optimizer === 'momentum'
+          ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
+          : tf.train[optimizer](learningRate),
+    });
 
     // Generate some synthetic data for training.
     const xs = tf.tensor2d([1, 2, 3, 4], [4, 1]);
@@ -267,12 +317,18 @@ export class WorkspaceComponent implements OnInit {
     /// To implement
   }
 
+  startQuickPrediction(): void {
+    this.generateRandomData();
+    this.generatePrediction();
+  }
+
   private loadConfigsFromLocalStorage(): void {
     this.traningConfigFormGroup.setValue({
       basicLayer: this.localStorageService.getItem('basicLayer') ?? 'GRU',
       helpLayer: this.localStorageService.getItem('helpLayer') ?? 'Dropout',
       lossFn: this.localStorageService.getItem('lossFn') ?? 'meanSquaredError',
       optimizer: this.localStorageService.getItem('optimizer') ?? 'momentum',
+      learningRate: this.localStorageService.getItem('learningRate') ?? 0.001,
     });
 
     this.chartConfigFormGroup.setValue({
@@ -300,6 +356,12 @@ export class WorkspaceComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.#destroyRef))
       .subscribe((formGroupValue) => {
         this.saveConfigToLocalStorage(formGroupValue);
+        if (formGroupValue.optimizer) {
+          this.isLearningRateExcluded =
+            this.excludedOptimizersFromLearningRate.includes(
+              formGroupValue.optimizer
+            );
+        }
       });
   }
 
@@ -327,22 +389,26 @@ export class WorkspaceComponent implements OnInit {
     this.localStorageService.setItems(formValueMap);
   }
 
-  toggleAnimation(
-    listRef: HTMLUListElement,
-    detailsRef: HTMLDetailsElement
-  ): void {
-    setTimeout(() => {
-      if (typeof detailsRef.open === 'boolean') {
-        const animationClasses = ['fade-in', 'fade-out'];
-        this.renderer2.removeClass(
-          listRef,
-          animationClasses[detailsRef.open ? 1 : 0]
-        );
-        this.renderer2.addClass(
-          listRef,
-          animationClasses[detailsRef.open ? 0 : 1]
-        );
-      }
+  private fetchWorksheetData(): void {
+    // some kind of raw data
+    this.loadedData = [];
+
+    // here, we should convert loadedData to worksheetData
+    // and make sure, that those are in right format
+    this.generateRandomData();
+  }
+
+  private generateRandomData(): void {
+    this.worksheetData = Array.from({ length: 24 }, (_, i) => {
+      const utcFullYear = new Date().getUTCFullYear() - (i < 12 ? 1 : 0);
+      return {
+        label:
+          new Date(0, i).toLocaleString('en-US', { month: '2-digit' }) +
+          ' / ' +
+          utcFullYear,
+        value: Math.ceil((Math.random() + 10) * 50),
+      };
     });
+    this.changeDetectorRef.detectChanges();
   }
 }

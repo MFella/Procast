@@ -1,8 +1,6 @@
 export type WorksheetRowData = {
-  make: string;
-  model: string;
-  electric: boolean;
-  price: number;
+  label: string;
+  value: string | number;
 };
 
 export type WorksheetColDef = Record<'field', keyof WorksheetRowData> & {

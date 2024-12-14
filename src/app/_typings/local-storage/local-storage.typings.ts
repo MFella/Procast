@@ -13,5 +13,6 @@ export type LocalStorageMappings = {
   lossFn: LossFn;
   optimizer: Optimizer;
   showLegend: boolean;
+  learningRate: number;
   chartType: ChartType;
 };

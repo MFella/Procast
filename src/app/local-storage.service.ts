@@ -15,6 +15,15 @@ export class LocalStorageService {
         | LocalStorageMappings[T]
         | null;
     }
+
+    if (key === 'learningRate') {
+      const learningRateFromLS = localStorage.getItem(key);
+      if (!learningRateFromLS) {
+        return null;
+      }
+
+      return parseFloat(learningRateFromLS) as LocalStorageMappings[T] | null;
+    }
     return localStorage.getItem(key) as LocalStorageMappings[T] | null;
   }
 
