@@ -6,9 +6,10 @@ import {
   inject,
   OnInit,
   Renderer2,
+  viewChild,
 } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
-import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
+import { Chart, ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -38,6 +39,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { NgClass } from '@angular/common';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
 import { TrainingConverter } from '../_helpers/training-converter';
+import { PredictionSequence } from '../_typings/prediction/prediction.typings';
 
 type TrainingConfigFormGroup = {
   basicLayer: FormControl<BasicLayer | null>;
@@ -70,6 +72,8 @@ type ChartConfigFormGroup = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceComponent implements OnInit {
+  private chartComponent = viewChild.required(BaseChartDirective);
+
   private static readonly MOMENTUM_DEFAULT = 20;
   private static readonly LEARNING_RATE_DEFAULT = 0.001;
   private static readonly OPTIMIZER_DEFAULT: Optimizer = 'momentum';
@@ -100,7 +104,6 @@ export class WorkspaceComponent implements OnInit {
   });
 
   isExpanded = false;
-  isLearningRateExcluded = false;
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta', 'adam'];
   canStartPrediction = false;
   canSaveResults = false;
@@ -211,7 +214,7 @@ export class WorkspaceComponent implements OnInit {
     ctx.p0.skip || ctx.p1.skip ? value : undefined;
   private down = (ctx: any, value: any) =>
     ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
-  lineChartData: ChartConfiguration<'line'>['data'] = {
+  chartData: ChartConfiguration<'line'>['data'] = {
     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
     datasets: [
       {
@@ -263,7 +266,11 @@ export class WorkspaceComponent implements OnInit {
     });
   }
 
-  generatePrediction(): void {
+  async generatePrediction(
+    sequenceLength: number = 12,
+    outputLength: number = 2
+  ): Promise<void> {
+    const pastData = this.worksheetData.map((data) => data.value);
     let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
       this.traningConfigFormGroup.value;
     optimizer ??= WorkspaceComponent.OPTIMIZER_DEFAULT;
@@ -271,6 +278,7 @@ export class WorkspaceComponent implements OnInit {
     lossFn ??= WorkspaceComponent.LOSS_FN_DEFAULT;
     helpLayer ??= WorkspaceComponent.HELP_LAYER_DEFAULT;
     basicLayer ??= WorkspaceComponent.BASIC_LAYER_DEFAULT;
+
     // Define a model for linear regression
     const model = tf.sequential();
     const basicLayerMethod =
@@ -280,8 +288,8 @@ export class WorkspaceComponent implements OnInit {
     model.add(
       tf.layers[basicLayerMethod]({
         units: 50,
+        inputShape: [sequenceLength, 1],
         returnSequences: false,
-        inputShape: [24, 1],
       })
     );
 
@@ -290,36 +298,50 @@ export class WorkspaceComponent implements OnInit {
         rate: 0.2,
       })
     );
-    //
-    model.add(tf.layers.dense({ units: 1 }));
+
+    // creation of output layer
+    model.add(tf.layers.dense({ units: outputLength }));
 
     // Prepare the model for training: Specify the loss and the optimizer.
-    model.compile({
-      loss: 'meanSquaredError',
-      optimizer:
-        optimizer === 'momentum'
-          ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
-          : tf.train[optimizer](learningRate),
-    });
+    // model.compile({
+    //   loss: lossFn,
+    //   optimizer:
+    //     optimizer === 'momentum'
+    //       ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
+    //       : tf.train[optimizer](learningRate),
+    // });
 
-    // Generate some synthetic data for training.
-    const xs = tf.tensor2d([1, 2, 3, 4], [4, 1]);
-    const ys = tf.tensor2d([1, 3, 5, 7], [4, 1]);
+    // const { inputTensor, outputTensor } = this.createPredictionSequences(
+    //   pastData,
+    //   sequenceLength
+    // );
 
     // Train the model using the data.
-    model.fit(xs, ys).then(() => {
-      // Use the model to do inference on a data point the model hasn't seen before:
-      const result = model.predict(tf.tensor2d([5], [1, 1])) as tf.Tensor;
-    });
+
+    // await model.fit(inputTensor, outputTensor, {
+    //   epochs: 100,
+    //   batchSize: 1,
+    // });
+
+    // const lastDataFromPast = pastData
+    //   .slice(-sequenceLength)
+    //   .map((value) => [value]);
+    // const lastDataFromPastTensor = tf.tensor3d([lastDataFromPast]);
+
+    // const prediction = model.predict(lastDataFromPastTensor) as tf.Tensor;
+    // const predictedData = prediction.dataSync();
+    // console.log(
+    //   `Next month: ${predictedData[0]}, another month: ${predictedData[1]}`
+    // );
   }
 
   loadData(): void {
     /// To implement
   }
 
-  startQuickPrediction(): void {
+  async startQuickPrediction(): Promise<void> {
     this.generateRandomData();
-    this.generatePrediction();
+    await this.generatePrediction();
   }
 
   private loadConfigsFromLocalStorage(): void {
@@ -356,11 +378,16 @@ export class WorkspaceComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.#destroyRef))
       .subscribe((formGroupValue) => {
         this.saveConfigToLocalStorage(formGroupValue);
-        if (formGroupValue.optimizer) {
-          this.isLearningRateExcluded =
+        const learningRateFormControl =
+          this.traningConfigFormGroup.controls.learningRate;
+
+        if (formGroupValue.optimizer && learningRateFormControl) {
+          const shouldDisableLearningRate =
             this.excludedOptimizersFromLearningRate.includes(
               formGroupValue.optimizer
             );
+
+          shouldDisableLearningRate && learningRateFormControl.disable();
         }
       });
   }
@@ -409,6 +436,54 @@ export class WorkspaceComponent implements OnInit {
         value: Math.ceil((Math.random() + 10) * 50),
       };
     });
+
+    this.chartData.labels = this.worksheetData.map(
+      (worksheetRowData) => worksheetRowData.label
+    );
+    this.chartData.datasets[0].data = this.worksheetData.map(
+      (worksheetRowData) => worksheetRowData.value
+    );
+    this.chartComponent().update();
     this.changeDetectorRef.detectChanges();
+  }
+
+  private createPredictionSequences(
+    data: Array<number>,
+    inputLength: number = 12,
+    outputLength: number = 2
+  ): PredictionSequence {
+    if (data.length < inputLength + outputLength) {
+      throw new Error(
+        'Cannot make prediction - provided historical data is too short to train model'
+      );
+    }
+
+    let inputSequence = [];
+    const outputSequence = [];
+
+    for (let i = 0; i < data.length - inputLength - outputLength; i++) {
+      inputSequence.push(data.slice(i, i + inputLength));
+      outputSequence.push(
+        data.slice(i + inputLength, i + inputLength + outputLength)
+      );
+    }
+
+    inputSequence = inputSequence.map((input) => input.map((value) => [value]));
+    // let inputTensor = tf.tensor3d(inputSequence, [
+    //   inputSequence.length,
+    //   inputLength,
+    //   1,
+    // ]);
+
+    // inputTensor = inputTensor.reshape([
+    //   inputTensor.shape[0],
+    //   inputTensor.shape[1],
+    //   1,
+    // ]);
+
+    return {
+      inputTensor: tf.tensor3d(inputSequence),
+      outputTensor: tf.tensor2d(outputSequence),
+    };
   }
 }

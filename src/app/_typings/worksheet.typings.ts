@@ -1,6 +1,6 @@
 export type WorksheetRowData = {
   label: string;
-  value: string | number;
+  value: number;
 };
 
 export type WorksheetColDef = Record<'field', keyof WorksheetRowData> & {

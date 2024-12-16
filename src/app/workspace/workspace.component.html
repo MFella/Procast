@@ -6,9 +6,10 @@
     }"
   >
     <canvas
+      #chart
       baseChart
       [type]="chartConfigFormGroup.value['chartType']!"
-      [data]="lineChartData"
+      [data]="chartData"
       [options]="lineChartOptions"
       [legend]="lineChartLegend"
     >
@@ -210,7 +211,6 @@
                       <mat-form-field class="w-full">
                         <input
                           [formControlName]="'learningRate'"
-                          [disabled]="isLearningRateExcluded"
                           matInput
                           placeholder="E.g. 0.005"
                           value="0.001"
