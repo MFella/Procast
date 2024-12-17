@@ -40,6 +40,9 @@ import { NgClass } from '@angular/common';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
 import { TrainingConverter } from '../_helpers/training-converter';
 import { PredictionSequence } from '../_typings/prediction/prediction.typings';
+import { Store } from '@ngrx/store';
+import { seriesDataActions } from '../architecture/actions/series-data.actions';
+import { selectSeriesData } from '../architecture/selectors';
 
 type TrainingConfigFormGroup = {
   basicLayer: FormControl<BasicLayer | null>;
@@ -83,14 +86,14 @@ export class WorkspaceComponent implements OnInit {
 
   private readonly localStorageService = inject(LocalStorageService);
   private readonly matDialog = inject(MatDialog);
-  private readonly renderer2 = inject(Renderer2);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly store = inject(Store);
   #destroyRef = inject(DestroyRef);
   private loadedData: Array<any> = [];
-  worksheetData: Array<WorksheetRowData> = [];
+  worksheetData: Map<string, WorksheetRowData> = new Map();
   isPredictionInProgress = false;
 
-  traningConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
+  trainingConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
     basicLayer: new FormControl('GRU', [Validators.required]),
     helpLayer: new FormControl('Dropout', [Validators.required]),
     lossFn: new FormControl('meanSquaredError', [Validators.required]),
@@ -210,24 +213,22 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
-  private skipped = (ctx: any, value: any) =>
-    ctx.p0.skip || ctx.p1.skip ? value : undefined;
-  private down = (ctx: any, value: any) =>
-    ctx.p0.parsed.y > ctx.p1.parsed.y ? value : undefined;
+  private isPredicted = (ctx: any, value: any) => {
+    return ctx.p0.raw.isPredicted || ctx.p1.raw.isPredicted ? value : undefined;
+  };
   chartData: ChartConfiguration<'line'>['data'] = {
     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
     datasets: [
       {
         data: [65, 59, NaN, 81, 56, NaN, 72],
-        label: 'Series A',
+        label: 'Random',
         fill: true,
         tension: 0.5,
         borderColor: 'blue',
         segment: {
-          // borderColor: (ctx) =>
-          //   this.skipped(ctx, 'rgb(0,0,0,0.2)') ||
-          //   this.down(ctx, 'rgb(192,75,75)'),
-          borderDash: (ctx: any) => this.skipped(ctx, [6, 6]),
+          borderColor: (ctx) =>
+            this.isPredicted(ctx, [10, 10]) ? 'gray' : 'blue',
+          borderDash: (ctx: any) => this.isPredicted(ctx, [10, 10]),
         },
         spanGaps: true,
         backgroundColor: 'rgba(224, 242, 254, .6)',
@@ -250,12 +251,14 @@ export class WorkspaceComponent implements OnInit {
     },
   };
 
-  lineChartLegend = true;
+  chartLegend = true;
 
   ngOnInit(): void {
     this.loadConfigsFromLocalStorage();
     this.observeTrainingConfigChanged();
     this.observeChartConfigChanged();
+    this.observeWorksheetData();
+    this.generateRandomData();
   }
 
   openLoadDataModal(): void {
@@ -270,9 +273,11 @@ export class WorkspaceComponent implements OnInit {
     sequenceLength: number = 12,
     outputLength: number = 2
   ): Promise<void> {
-    const pastData = this.worksheetData.map((data) => data.value);
+    const pastData = Array.from(this.worksheetData.values()).map(
+      (data) => data.value
+    );
     let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
-      this.traningConfigFormGroup.value;
+      this.trainingConfigFormGroup.value;
     optimizer ??= WorkspaceComponent.OPTIMIZER_DEFAULT;
     learningRate ??= WorkspaceComponent.LEARNING_RATE_DEFAULT;
     lossFn ??= WorkspaceComponent.LOSS_FN_DEFAULT;
@@ -333,6 +338,23 @@ export class WorkspaceComponent implements OnInit {
     // console.log(
     //   `Next month: ${predictedData[0]}, another month: ${predictedData[1]}`
     // );
+
+    const worksheetData = structuredClone(this.worksheetData);
+    worksheetData.set(`Raw ${this.worksheetData.size}`, {
+      value: 523,
+      label: `Raw ${this.worksheetData.size}`,
+      isPredicted: true,
+    });
+    worksheetData.set(`Raw ${this.worksheetData.size + 1}`, {
+      value: 483,
+      label: `Raw ${this.worksheetData.size + 1}`,
+      isPredicted: true,
+    });
+    this.store.dispatch(
+      seriesDataActions.update({
+        seriesData: worksheetData,
+      })
+    );
   }
 
   loadData(): void {
@@ -340,12 +362,14 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async startQuickPrediction(): Promise<void> {
-    this.generateRandomData();
+    // this.generateRandomData();
     await this.generatePrediction();
   }
 
+  savePredictionResults(): void {}
+
   private loadConfigsFromLocalStorage(): void {
-    this.traningConfigFormGroup.setValue({
+    this.trainingConfigFormGroup.setValue({
       basicLayer: this.localStorageService.getItem('basicLayer') ?? 'GRU',
       helpLayer: this.localStorageService.getItem('helpLayer') ?? 'Dropout',
       lossFn: this.localStorageService.getItem('lossFn') ?? 'meanSquaredError',
@@ -353,16 +377,21 @@ export class WorkspaceComponent implements OnInit {
       learningRate: this.localStorageService.getItem('learningRate') ?? 0.001,
     });
 
+    const showLegendFromLS = this.localStorageService.getItem('showLegend');
     this.chartConfigFormGroup.setValue({
       chartType: this.localStorageService.getItem('chartType') ?? 'line',
-      showLegend: this.localStorageService.getItem('showLegend'),
+      showLegend: showLegendFromLS,
     });
+
+    if (showLegendFromLS != null) {
+      this.chartLegend = showLegendFromLS;
+    }
 
     this.saveTrainigConfigToLocalStorage();
   }
 
   private saveTrainigConfigToLocalStorage(): void {
-    const configToSave = this.traningConfigFormGroup.value;
+    const configToSave = this.trainingConfigFormGroup.value;
     this.localStorageService.setItems(
       new Map(
         Object.keys(configToSave).map((key) => [
@@ -374,12 +403,12 @@ export class WorkspaceComponent implements OnInit {
   }
 
   private observeTrainingConfigChanged(): void {
-    this.traningConfigFormGroup.valueChanges
+    this.trainingConfigFormGroup.valueChanges
       .pipe(takeUntilDestroyed(this.#destroyRef))
       .subscribe((formGroupValue) => {
         this.saveConfigToLocalStorage(formGroupValue);
         const learningRateFormControl =
-          this.traningConfigFormGroup.controls.learningRate;
+          this.trainingConfigFormGroup.controls.learningRate;
 
         if (formGroupValue.optimizer && learningRateFormControl) {
           const shouldDisableLearningRate =
@@ -397,6 +426,7 @@ export class WorkspaceComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.#destroyRef))
       .subscribe((formGroupValue) => {
         this.saveConfigToLocalStorage(formGroupValue);
+        this.chartLegend = formGroupValue.showLegend ?? false;
       });
   }
 
@@ -426,25 +456,26 @@ export class WorkspaceComponent implements OnInit {
   }
 
   private generateRandomData(): void {
-    this.worksheetData = Array.from({ length: 24 }, (_, i) => {
-      const utcFullYear = new Date().getUTCFullYear() - (i < 12 ? 1 : 0);
-      return {
-        label:
+    const worksheetData: Array<[string, WorksheetRowData]> = Array(24)
+      .fill(0)
+      .map((_, i) => {
+        const utcFullYear = new Date().getUTCFullYear() - (i < 12 ? 1 : 0);
+        const label =
           new Date(0, i).toLocaleString('en-US', { month: '2-digit' }) +
           ' / ' +
-          utcFullYear,
-        value: Math.ceil((Math.random() + 10) * 50),
-      };
-    });
+          utcFullYear;
+        return [
+          label,
+          {
+            label,
+            value: Math.ceil((Math.random() + 10) * 50),
+          },
+        ];
+      });
 
-    this.chartData.labels = this.worksheetData.map(
-      (worksheetRowData) => worksheetRowData.label
+    this.store.dispatch(
+      seriesDataActions.update({ seriesData: new Map(worksheetData) })
     );
-    this.chartData.datasets[0].data = this.worksheetData.map(
-      (worksheetRowData) => worksheetRowData.value
-    );
-    this.chartComponent().update();
-    this.changeDetectorRef.detectChanges();
   }
 
   private createPredictionSequences(
@@ -469,21 +500,33 @@ export class WorkspaceComponent implements OnInit {
     }
 
     inputSequence = inputSequence.map((input) => input.map((value) => [value]));
-    // let inputTensor = tf.tensor3d(inputSequence, [
-    //   inputSequence.length,
-    //   inputLength,
-    //   1,
-    // ]);
-
-    // inputTensor = inputTensor.reshape([
-    //   inputTensor.shape[0],
-    //   inputTensor.shape[1],
-    //   1,
-    // ]);
 
     return {
       inputTensor: tf.tensor3d(inputSequence),
       outputTensor: tf.tensor2d(outputSequence),
     };
+  }
+
+  private updateChartComponent(): void {
+    this.chartData.labels = Array.from(this.worksheetData.values()).map(
+      (worksheetRowData) => worksheetRowData.label
+    );
+    this.chartData.datasets[0].data = Array.from(
+      this.worksheetData.values()
+    ).map((worksheetRowData, index) => ({
+      x: index,
+      y: worksheetRowData.value,
+      isPredicted: worksheetRowData.isPredicted,
+    }));
+    this.chartComponent().update();
+  }
+
+  private observeWorksheetData(): void {
+    this.store.select(selectSeriesData).subscribe(({ seriesData }) => {
+      this.worksheetData = seriesData;
+      this.updateChartComponent();
+
+      this.changeDetectorRef.detectChanges();
+    });
   }
 }

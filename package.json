@@ -23,6 +23,7 @@
     "@angular/platform-server": "^19.0.0",
     "@angular/router": "^19.0.0",
     "@angular/ssr": "^19.0.2",
+    "@ngrx/store": "^19.0.0-rc.0",
     "@tensorflow/tfjs": "^4.22.0",
     "@tsparticles/angular": "^3.0.0",
     "@tsparticles/engine": "^3.7.1",

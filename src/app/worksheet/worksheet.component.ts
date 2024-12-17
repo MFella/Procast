@@ -1,10 +1,17 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular'; // Angular Data Grid Component
-import { GridOptions, GridReadyEvent } from 'ag-grid-community';
+import {
+  CellEditRequestEvent,
+  GridOptions,
+  GridReadyEvent,
+  RowDataUpdatedEvent,
+} from 'ag-grid-community';
 import {
   WorksheetColDef,
   WorksheetRowData,
 } from '../_typings/worksheet.typings';
+import { Store } from '@ngrx/store';
+import { seriesDataActions } from '../architecture/actions/series-data.actions';
 
 @Component({
   selector: 'app-worksheet',
@@ -14,32 +21,49 @@ import {
 })
 export class WorksheetComponent implements OnInit {
   @Input({ required: true })
-  worksheetData!: Array<WorksheetRowData>;
+  worksheetData: Map<string, WorksheetRowData> = new Map();
+
+  store: Store = inject(Store);
 
   monthsInYear = Array.from({ length: 12 }, (item, i) => {
     return new Date(0, i).toLocaleString('en-US', { month: 'long' });
   });
 
-  rowData: Array<WorksheetRowData> = [];
-
   colDefs: Array<WorksheetColDef> = [
-    { field: 'label', editable: true },
+    { field: 'label', editable: false },
     { field: 'value', editable: true },
   ];
 
   gridOptions: GridOptions = {
     // isFullWidthRow: () => true,
+    onRowDataUpdated: this.onRowDataUpdated.bind(this),
+    readOnlyEdit: true,
+    onCellEditRequest: (event: CellEditRequestEvent) => {
+      if (!event.value || event.value < 0) {
+        return;
+      }
+
+      this.store.dispatch(
+        seriesDataActions.singleUpdate({
+          key: event.data.label,
+          value: event.value,
+        })
+      );
+      // the application should update the data somehow
+    },
   };
 
-  ngOnInit(): void {
-    this.generateMockData();
+  get convertedWorksheetData(): Array<WorksheetRowData> {
+    return Array.from(this.worksheetData.values());
   }
+
+  ngOnInit(): void {}
 
   onGridReady($event: GridReadyEvent): void {
     $event.api.sizeColumnsToFit();
   }
 
-  generateMockData(): void {
-    // this.rowData =
+  onRowDataUpdated($event: RowDataUpdatedEvent): void {
+    console.log($event);
   }
 }
