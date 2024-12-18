@@ -262,11 +262,25 @@ export class WorkspaceComponent implements OnInit {
   }
 
   openLoadDataModal(): void {
-    this.matDialog.open(LoadDataComponent, {
+    const matDialogRef = this.matDialog.open(LoadDataComponent, {
       width: '500px',
       enterAnimationDuration: 200,
       exitAnimationDuration: 300,
     });
+
+    matDialogRef
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.#destroyRef))
+      .subscribe(({ event, data }) => {
+        if (event === 'success' && data.seriesData?.size) {
+          this.store.dispatch(
+            seriesDataActions.update({
+              seriesData: data.seriesData,
+            })
+          );
+          this.changeDetectorRef.detectChanges();
+        }
+      });
   }
 
   async generatePrediction(

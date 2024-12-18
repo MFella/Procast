@@ -36,21 +36,8 @@ export class WorksheetComponent implements OnInit {
 
   gridOptions: GridOptions = {
     // isFullWidthRow: () => true,
-    onRowDataUpdated: this.onRowDataUpdated.bind(this),
     readOnlyEdit: true,
-    onCellEditRequest: (event: CellEditRequestEvent) => {
-      if (!event.value || event.value < 0) {
-        return;
-      }
-
-      this.store.dispatch(
-        seriesDataActions.singleUpdate({
-          key: event.data.label,
-          value: event.value,
-        })
-      );
-      // the application should update the data somehow
-    },
+    onCellEditRequest: this.handleCellEditRequest.bind(this),
   };
 
   get convertedWorksheetData(): Array<WorksheetRowData> {
@@ -63,7 +50,16 @@ export class WorksheetComponent implements OnInit {
     $event.api.sizeColumnsToFit();
   }
 
-  onRowDataUpdated($event: RowDataUpdatedEvent): void {
-    console.log($event);
+  private handleCellEditRequest(event: CellEditRequestEvent): void {
+    if (!event.value || event.value < 0) {
+      return;
+    }
+
+    this.store.dispatch(
+      seriesDataActions.singleUpdate({
+        key: event.data.label,
+        value: event.value,
+      })
+    );
   }
 }
