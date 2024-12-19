@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { read, utils, writeFile } from 'xlsx';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
+import { PreferredExtension } from '../_typings/workspace/sidebar-config.typings';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FileInteractionService {
-  private static readonly RESERVED_LABEL_HEADER_TEXT = 'Label';
-  private static readonly RESERVED_VALUE_HEADER_TEXT = 'Value';
+  private static readonly RESERVED_LABEL_HEADER_TEXT = 'label';
+  private static readonly RESERVED_VALUE_HEADER_TEXT = 'value';
 
   private static readonly ALLOWED_FILE_MIME_TYPES: [string, string] = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -37,25 +38,24 @@ export class FileInteractionService {
   }
 
   async tryToWriteFile(
-    worksheetRowData: Map<string, WorksheetRowData>
+    worksheetRowData: Map<string, WorksheetRowData>,
+    preferredExtension: PreferredExtension
   ): Promise<void> {
-    const workbook = utils.book_new();
-    const a = Array.from(worksheetRowData).map((obj) => {
-      return {
-        label: obj[0],
-        value: obj[1],
-      };
-    });
-    const xd = utils.json_to_sheet(
-      [
-        { A: 1, B: 2 },
-        { B: 2, C: 3 },
-      ],
+    const workbookToSave = utils.book_new();
+    const sheetOfData = utils.json_to_sheet(
+      Array.from(worksheetRowData.values()),
       {
-        header: ['C'],
+        header: [
+          FileInteractionService.RESERVED_LABEL_HEADER_TEXT,
+          FileInteractionService.RESERVED_VALUE_HEADER_TEXT,
+        ],
       }
     );
-    debugger;
+    utils.book_append_sheet(workbookToSave, sheetOfData, 'Predicted Data');
+    return writeFile(workbookToSave, `Predicted Data.${preferredExtension}`, {
+      bookType: preferredExtension,
+      type: 'buffer',
+    });
   }
 
   private async parseXlsxFile(xlsxFile: File): Promise<Map<string, any>> {
@@ -95,12 +95,7 @@ export class FileInteractionService {
   ): Map<string, WorksheetRowData> {
     let splittedCsvString: Array<string> = csvString
       .split('\n')
-      .filter(Boolean)
-      .slice(0, 2);
-
-    if (splittedCsvString.length !== 2) {
-      throw new Error('Provided data is has not got appropriate length');
-    }
+      .filter(Boolean);
 
     const csvValues =
       (splittedCsvString

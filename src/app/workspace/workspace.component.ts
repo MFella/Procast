@@ -419,7 +419,10 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async savePredictionResults(): Promise<void> {
-    await this.fileInteractionService.tryToWriteFile(this.worksheetData);
+    await this.fileInteractionService.tryToWriteFile(
+      this.worksheetData,
+      this.fileSaveFormGroup.value?.preferredExtension ?? 'csv'
+    );
   }
 
   generateRandomData(): void {
