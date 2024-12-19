@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
-import { Chart, ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
+import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -31,6 +31,7 @@ import {
   Optimizer,
   GeneralConfigSelectOption,
   ShowLegend,
+  PreferredExtension,
 } from '../_typings/workspace/sidebar-config.typings';
 import { LocalStorageService } from '../local-storage.service';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
@@ -43,6 +44,9 @@ import { PredictionSequence } from '../_typings/prediction/prediction.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
 import { selectSeriesData } from '../architecture/selectors';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { SudoRedoActionPayload } from '../_typings/workspace/actions/workspace-actions.typings';
+import { FileInteractionService } from '../_services/file-interaction.service';
 
 type TrainingConfigFormGroup = {
   basicLayer: FormControl<BasicLayer | null>;
@@ -57,6 +61,10 @@ type ChartConfigFormGroup = {
   showLegend: FormControl<boolean | null>;
 };
 
+type FileSaveFormGroup = {
+  preferredExtension: FormControl<PreferredExtension | null>;
+};
+
 @Component({
   selector: 'app-workspace',
   imports: [
@@ -69,6 +77,7 @@ type ChartConfigFormGroup = {
     ReactiveFormsModule,
     MatCheckboxModule,
     NgClass,
+    MatTooltipModule,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
@@ -77,6 +86,8 @@ type ChartConfigFormGroup = {
 export class WorkspaceComponent implements OnInit {
   private chartComponent = viewChild.required(BaseChartDirective);
 
+  private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
+  private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
   private static readonly MOMENTUM_DEFAULT = 20;
   private static readonly LEARNING_RATE_DEFAULT = 0.001;
   private static readonly OPTIMIZER_DEFAULT: Optimizer = 'momentum';
@@ -88,9 +99,14 @@ export class WorkspaceComponent implements OnInit {
   private readonly matDialog = inject(MatDialog);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly store = inject(Store);
+  private readonly fileInteractionService = inject(FileInteractionService);
+
   #destroyRef = inject(DestroyRef);
   private loadedData: Array<any> = [];
-  worksheetData: Map<string, WorksheetRowData> = new Map();
+  worksheetData: Map<string, WorksheetRowData> = new Map<
+    string,
+    WorksheetRowData
+  >();
   isPredictionInProgress = false;
 
   trainingConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
@@ -106,10 +122,17 @@ export class WorkspaceComponent implements OnInit {
     chartType: new FormControl('line', [Validators.required]),
   });
 
+  fileSaveFormGroup = new FormGroup<FileSaveFormGroup>({
+    preferredExtension: new FormControl('csv', [Validators.required]),
+  });
+
   isExpanded = false;
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta', 'adam'];
   canStartPrediction = false;
   canSaveResults = false;
+  generatePredictionTooltip = '';
+  undoActions: Array<SudoRedoActionPayload> = [];
+  redoActions: Array<SudoRedoActionPayload> = [];
 
   basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> = [
     {
@@ -213,6 +236,19 @@ export class WorkspaceComponent implements OnInit {
     },
   ];
 
+  preferredExtensionOptions: Array<
+    GeneralConfigSelectOption<PreferredExtension>
+  > = [
+    {
+      value: 'csv',
+      viewValue: 'CSV',
+    },
+    {
+      value: 'xlsx',
+      viewValue: 'XLSX',
+    },
+  ];
+
   private isPredicted = (ctx: any, value: any) => {
     return ctx.p0.raw.isPredicted || ctx.p1.raw.isPredicted ? value : undefined;
   };
@@ -257,6 +293,7 @@ export class WorkspaceComponent implements OnInit {
     this.loadConfigsFromLocalStorage();
     this.observeTrainingConfigChanged();
     this.observeChartConfigChanged();
+    this.observeFileSaveConfigChanged();
     this.observeWorksheetData();
     this.generateRandomData();
   }
@@ -276,6 +313,7 @@ export class WorkspaceComponent implements OnInit {
           this.store.dispatch(
             seriesDataActions.update({
               seriesData: data.seriesData,
+              eventSource: 'load',
             })
           );
           this.changeDetectorRef.detectChanges();
@@ -283,10 +321,10 @@ export class WorkspaceComponent implements OnInit {
       });
   }
 
-  async generatePrediction(
-    sequenceLength: number = 12,
-    outputLength: number = 2
-  ): Promise<void> {
+  async generatePrediction(): Promise<void> {
+    const outputLength = 2;
+    const sequenceLength = this.worksheetData.size - outputLength - 1;
+
     const pastData = Array.from(this.worksheetData.values()).map(
       (data) => data.value
     );
@@ -322,51 +360,51 @@ export class WorkspaceComponent implements OnInit {
     model.add(tf.layers.dense({ units: outputLength }));
 
     // Prepare the model for training: Specify the loss and the optimizer.
-    // model.compile({
-    //   loss: lossFn,
-    //   optimizer:
-    //     optimizer === 'momentum'
-    //       ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
-    //       : tf.train[optimizer](learningRate),
-    // });
+    model.compile({
+      loss: lossFn,
+      optimizer:
+        optimizer === 'momentum'
+          ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
+          : tf.train[optimizer](learningRate),
+    });
 
-    // const { inputTensor, outputTensor } = this.createPredictionSequences(
-    //   pastData,
-    //   sequenceLength
-    // );
+    const { inputTensor, outputTensor } = this.createPredictionSequences(
+      pastData,
+      sequenceLength
+    );
 
     // Train the model using the data.
 
-    // await model.fit(inputTensor, outputTensor, {
-    //   epochs: 100,
-    //   batchSize: 1,
-    // });
+    await model.fit(inputTensor, outputTensor, {
+      epochs: 100,
+      batchSize: 1,
+    });
 
-    // const lastDataFromPast = pastData
-    //   .slice(-sequenceLength)
-    //   .map((value) => [value]);
-    // const lastDataFromPastTensor = tf.tensor3d([lastDataFromPast]);
+    const lastDataFromPast = pastData
+      .slice(-sequenceLength)
+      .map((value) => [value]);
+    const lastDataFromPastTensor = tf.tensor3d([lastDataFromPast]);
 
-    // const prediction = model.predict(lastDataFromPastTensor) as tf.Tensor;
-    // const predictedData = prediction.dataSync();
-    // console.log(
-    //   `Next month: ${predictedData[0]}, another month: ${predictedData[1]}`
-    // );
+    const prediction = model.predict(lastDataFromPastTensor) as tf.Tensor;
+    const predictedData = prediction.dataSync();
+    console.log(
+      `Next month: ${predictedData[0]}, another month: ${predictedData[1]}`
+    );
 
     const worksheetData = structuredClone(this.worksheetData);
-    worksheetData.set(`Raw ${this.worksheetData.size}`, {
-      value: 523,
-      label: `Raw ${this.worksheetData.size}`,
-      isPredicted: true,
-    });
-    worksheetData.set(`Raw ${this.worksheetData.size + 1}`, {
-      value: 483,
-      label: `Raw ${this.worksheetData.size + 1}`,
-      isPredicted: true,
-    });
+
+    for (let i = 0; i < predictedData.length; i++) {
+      worksheetData.set(`Predicted No ${this.worksheetData.size + i}`, {
+        value: predictedData[i],
+        label: `Predicted No ${this.worksheetData.size + i}`,
+        isPredicted: true,
+      });
+    }
+
     this.store.dispatch(
       seriesDataActions.update({
         seriesData: worksheetData,
+        eventSource: 'predicted',
       })
     );
   }
@@ -380,7 +418,71 @@ export class WorkspaceComponent implements OnInit {
     await this.generatePrediction();
   }
 
-  savePredictionResults(): void {}
+  async savePredictionResults(): Promise<void> {
+    await this.fileInteractionService.tryToWriteFile(this.worksheetData);
+  }
+
+  generateRandomData(): void {
+    const worksheetData: Array<[string, WorksheetRowData]> = Array(24)
+      .fill(0)
+      .map((_, i) => {
+        const utcFullYear = new Date().getUTCFullYear() - (i < 12 ? 1 : 0);
+        const label =
+          new Date(0, i).toLocaleString('en-US', { month: '2-digit' }) +
+          ' / ' +
+          utcFullYear;
+        return [
+          label,
+          {
+            label,
+            value: Math.ceil((Math.random() + 10) * 50),
+          },
+        ];
+      });
+
+    this.store.dispatch(
+      seriesDataActions.update({
+        seriesData: new Map(worksheetData),
+        eventSource: 'randomized',
+      })
+    );
+  }
+
+  performUndo(): void {
+    const undoAction = this.undoActions.pop();
+
+    if (!undoAction || !this.worksheetData.size) {
+      return;
+    }
+
+    this.redoActions.push({
+      value: { seriesData: structuredClone(this.worksheetData) },
+    });
+    this.store.dispatch(
+      seriesDataActions.update({
+        seriesData: undoAction.value.seriesData,
+        eventSource: 'undo',
+      })
+    );
+  }
+
+  performRedo(): void {
+    const redoAction = this.redoActions.pop();
+
+    if (!redoAction || !this.worksheetData.size) {
+      return;
+    }
+
+    this.undoActions.push({
+      value: { seriesData: structuredClone(this.worksheetData) },
+    });
+    this.store.dispatch(
+      seriesDataActions.update({
+        seriesData: redoAction.value.seriesData,
+        eventSource: 'redo',
+      })
+    );
+  }
 
   private loadConfigsFromLocalStorage(): void {
     this.trainingConfigFormGroup.setValue({
@@ -392,28 +494,20 @@ export class WorkspaceComponent implements OnInit {
     });
 
     const showLegendFromLS = this.localStorageService.getItem('showLegend');
+
     this.chartConfigFormGroup.setValue({
       chartType: this.localStorageService.getItem('chartType') ?? 'line',
       showLegend: showLegendFromLS,
     });
 
+    this.fileSaveFormGroup.setValue({
+      preferredExtension:
+        this.localStorageService.getItem('preferredExtension') ?? 'csv',
+    });
+
     if (showLegendFromLS != null) {
       this.chartLegend = showLegendFromLS;
     }
-
-    this.saveTrainigConfigToLocalStorage();
-  }
-
-  private saveTrainigConfigToLocalStorage(): void {
-    const configToSave = this.trainingConfigFormGroup.value;
-    this.localStorageService.setItems(
-      new Map(
-        Object.keys(configToSave).map((key) => [
-          key as keyof LocalStorageMappings,
-          (configToSave as any)[key],
-        ])
-      )
-    );
   }
 
   private observeTrainingConfigChanged(): void {
@@ -444,6 +538,14 @@ export class WorkspaceComponent implements OnInit {
       });
   }
 
+  private observeFileSaveConfigChanged(): void {
+    this.fileSaveFormGroup.valueChanges
+      .pipe(takeUntilDestroyed(this.#destroyRef))
+      .subscribe((formGroupValue) => {
+        this.saveConfigToLocalStorage(formGroupValue);
+      });
+  }
+
   private saveConfigToLocalStorage<
     T extends keyof LocalStorageMappings
   >(formGroupValue: { [Key in T]?: LocalStorageMappings[Key] | null }): void {
@@ -467,29 +569,6 @@ export class WorkspaceComponent implements OnInit {
     // here, we should convert loadedData to worksheetData
     // and make sure, that those are in right format
     this.generateRandomData();
-  }
-
-  private generateRandomData(): void {
-    const worksheetData: Array<[string, WorksheetRowData]> = Array(24)
-      .fill(0)
-      .map((_, i) => {
-        const utcFullYear = new Date().getUTCFullYear() - (i < 12 ? 1 : 0);
-        const label =
-          new Date(0, i).toLocaleString('en-US', { month: '2-digit' }) +
-          ' / ' +
-          utcFullYear;
-        return [
-          label,
-          {
-            label,
-            value: Math.ceil((Math.random() + 10) * 50),
-          },
-        ];
-      });
-
-    this.store.dispatch(
-      seriesDataActions.update({ seriesData: new Map(worksheetData) })
-    );
   }
 
   private createPredictionSequences(
@@ -536,11 +615,37 @@ export class WorkspaceComponent implements OnInit {
   }
 
   private observeWorksheetData(): void {
-    this.store.select(selectSeriesData).subscribe(({ seriesData }) => {
-      this.worksheetData = seriesData;
-      this.updateChartComponent();
+    this.store
+      .select(selectSeriesData)
+      .subscribe(({ seriesData, eventSource }) => {
+        if (
+          this.worksheetData.size &&
+          eventSource !== 'undo' &&
+          eventSource !== 'redo'
+        ) {
+          if (
+            this.undoActions.length <
+            WorkspaceComponent.UNDO_REDO_LENGTH_THRESHOLD
+          ) {
+            this.undoActions.push({
+              value: {
+                seriesData: this.worksheetData,
+              },
+            });
+          }
+        }
+        this.worksheetData = seriesData;
+        this.canStartPrediction =
+          this.worksheetData.size > WorkspaceComponent.MINIMAL_SEQUENCE_LENGTH;
+        this.canSaveResults = this.worksheetData.size > 0;
 
-      this.changeDetectorRef.detectChanges();
-    });
+        this.generatePredictionTooltip = this.canStartPrediction
+          ? ''
+          : 'Cannot start prediction: provided sequence length is less that ' +
+            WorkspaceComponent.MINIMAL_SEQUENCE_LENGTH;
+        this.updateChartComponent();
+
+        this.changeDetectorRef.detectChanges();
+      });
   }
 }

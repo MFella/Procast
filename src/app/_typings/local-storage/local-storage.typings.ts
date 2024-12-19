@@ -4,6 +4,7 @@ import {
   HelpLayer,
   LossFn,
   Optimizer,
+  PreferredExtension,
   ShowLegend,
 } from '../workspace/sidebar-config.typings';
 
@@ -15,4 +16,5 @@ export type LocalStorageMappings = {
   showLegend: boolean;
   learningRate: number;
   chartType: ChartType;
+  preferredExtension: PreferredExtension;
 };

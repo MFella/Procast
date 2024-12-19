@@ -5,13 +5,15 @@ import { WorksheetRowData } from '../../_typings/worksheet.typings';
 
 export const initialState: SeriesDataState = {
   seriesData: new Map<string, WorksheetRowData>(),
+  eventSource: 'initialized',
 };
 
 export const seriesDataReducer = createReducer(
   initialState,
-  on(seriesDataActions.update, (state, { seriesData }) => ({
+  on(seriesDataActions.update, (state, { seriesData, eventSource }) => ({
     ...state,
     seriesData,
+    eventSource,
   })),
   on(seriesDataActions.singleUpdate, (state, { key, value }) => {
     const entityToUpdate = state.seriesData.get(key);

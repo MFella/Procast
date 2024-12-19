@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { read, utils } from 'xlsx';
+import { read, utils, writeFile } from 'xlsx';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
 
 @Injectable({
   providedIn: 'root',
 })
-export class FileReaderService {
+export class FileInteractionService {
   private static readonly RESERVED_LABEL_HEADER_TEXT = 'Label';
   private static readonly RESERVED_VALUE_HEADER_TEXT = 'Value';
 
@@ -23,15 +23,39 @@ export class FileReaderService {
       return new Map<string, any>();
     }
 
-    if (!FileReaderService.ALLOWED_FILE_MIME_TYPES.includes(fileToRead.type)) {
+    if (
+      !FileInteractionService.ALLOWED_FILE_MIME_TYPES.includes(fileToRead.type)
+    ) {
       throw new Error(`Not supported file mime type: ${fileToRead.type}`);
     }
 
-    if (fileToRead.type === FileReaderService.ALLOWED_FILE_MIME_TYPES[0]) {
+    if (fileToRead.type === FileInteractionService.ALLOWED_FILE_MIME_TYPES[0]) {
       return this.parseXlsxFile(fileToRead);
     }
 
     return this.parseCsvFile(fileToRead);
+  }
+
+  async tryToWriteFile(
+    worksheetRowData: Map<string, WorksheetRowData>
+  ): Promise<void> {
+    const workbook = utils.book_new();
+    const a = Array.from(worksheetRowData).map((obj) => {
+      return {
+        label: obj[0],
+        value: obj[1],
+      };
+    });
+    const xd = utils.json_to_sheet(
+      [
+        { A: 1, B: 2 },
+        { B: 2, C: 3 },
+      ],
+      {
+        header: ['C'],
+      }
+    );
+    debugger;
   }
 
   private async parseXlsxFile(xlsxFile: File): Promise<Map<string, any>> {
@@ -122,11 +146,11 @@ export class FileReaderService {
     const convertedXlsxObject: Array<[string, WorksheetRowData]> =
       xlsxEntries.map((entry: Record<string, string>) => {
         const parsedIntValue = parseInt(
-          entry[FileReaderService.RESERVED_VALUE_HEADER_TEXT]
+          entry[FileInteractionService.RESERVED_VALUE_HEADER_TEXT]
         );
         if (
-          !(FileReaderService.RESERVED_LABEL_HEADER_TEXT in entry) ||
-          !(FileReaderService.RESERVED_VALUE_HEADER_TEXT in entry)
+          !(FileInteractionService.RESERVED_LABEL_HEADER_TEXT in entry) ||
+          !(FileInteractionService.RESERVED_VALUE_HEADER_TEXT in entry)
         ) {
           throw new Error(
             'Reserved header labels are not present in xlsx file'
@@ -136,14 +160,14 @@ export class FileReaderService {
         if (isNaN(parsedIntValue)) {
           throw new Error(
             `Key ${
-              entry[FileReaderService.RESERVED_VALUE_HEADER_TEXT]
+              entry[FileInteractionService.RESERVED_VALUE_HEADER_TEXT]
             } from attached file is not int-like. Correct it`
           );
         }
         return [
-          entry[FileReaderService.RESERVED_LABEL_HEADER_TEXT],
+          entry[FileInteractionService.RESERVED_LABEL_HEADER_TEXT],
           {
-            label: entry[FileReaderService.RESERVED_LABEL_HEADER_TEXT],
+            label: entry[FileInteractionService.RESERVED_LABEL_HEADER_TEXT],
             value: parsedIntValue,
           },
         ];

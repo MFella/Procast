@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { FileReaderService } from './file-reader.service';
+import { FileInteractionService } from './file-interaction.service';
 
 describe('FileReaderService', () => {
-  let service: FileReaderService;
+  let service: FileInteractionService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(FileReaderService);
+    service = TestBed.inject(FileInteractionService);
   });
 
   it('should be created', () => {

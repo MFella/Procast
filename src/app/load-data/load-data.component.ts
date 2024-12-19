@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { FileReaderService } from '../_services/file-reader.service';
+import { FileInteractionService } from '../_services/file-interaction.service';
 import { AlertService } from '../_services/alert.service';
 import { TypeHelper } from '../_helpers/type-helper';
 
@@ -15,13 +15,13 @@ import { TypeHelper } from '../_helpers/type-helper';
   standalone: true,
 })
 export class LoadDataComponent {
-  private fileReaderService = inject(FileReaderService);
+  private readonly fileInteractionService = inject(FileInteractionService);
   private readonly alertService = inject(AlertService);
   private readonly matDialogRef = inject(MatDialogRef);
 
   async loadFileFromLocalDestination($event: Event): Promise<void> {
     try {
-      const parsedFile = await this.fileReaderService.readAndParseFile(
+      const parsedFile = await this.fileInteractionService.readAndParseFile(
         ($event.target as unknown as HTMLInputElement).files
       );
 

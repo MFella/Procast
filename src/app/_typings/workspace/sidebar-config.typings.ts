@@ -23,10 +23,16 @@ export type Optimizer =
 
 export type ShowLegend = 'Yes' | 'No';
 
+export type PreferredExtension = 'csv' | 'xlsx';
+
 type GenericLayer = BasicLayer | HelpLayer;
 type TrainingConfigEntity = GenericLayer | LossFn | Optimizer;
 type ChartConfigEntity = ChartType | ShowLegend;
-type GeneralConfigEntity = TrainingConfigEntity | ChartConfigEntity;
+type FileSaveConfig = PreferredExtension;
+type GeneralConfigEntity =
+  | TrainingConfigEntity
+  | ChartConfigEntity
+  | FileSaveConfig;
 
 export type GeneralConfigSelectOption<T extends GeneralConfigEntity> = {
   value: T;
