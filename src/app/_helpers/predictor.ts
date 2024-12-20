@@ -20,10 +20,13 @@ export class Predictor {
 
   static async generatePrediction(
     worksheetData: Map<string, WorksheetRowData>,
-    trainingConfig: TrainingConfig
+    trainingConfig: TrainingConfig,
+    postMessageFn: any
   ): Promise<Array<number>> {
     const outputLength = 2;
     const sequenceLength = worksheetData.size - outputLength - 1;
+    const batchSize = 1;
+    const epochSize = 100;
 
     const pastData = Array.from(worksheetData.values()).map(
       (data) => data.value
@@ -76,8 +79,32 @@ export class Predictor {
     // Train the model using the data.
 
     await model.fit(inputTensor, outputTensor, {
-      epochs: 100,
-      batchSize: 1,
+      epochs: epochSize,
+      batchSize: batchSize,
+      callbacks: {
+        onTrainBegin: (logs?: tf.Logs) => {
+          console.log(logs);
+        },
+        onTrainEnd: (logs?: tf.Logs) => {
+          console.log(logs);
+          postMessageFn({
+            event: 'progress',
+            value: 100,
+          });
+        },
+        onEpochBegin: (epoch: number) => {
+          console.log(epoch);
+          const progressValue = Math.floor(
+            (epoch / (epochSize * batchSize)) * 100
+          );
+          if (progressValue % 10 === 0) {
+            postMessageFn({
+              event: 'progress',
+              value: Math.floor((epoch / (epochSize * batchSize)) * 100),
+            });
+          }
+        },
+      },
     });
 
     const lastDataFromPast = pastData

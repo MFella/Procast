@@ -27,6 +27,6 @@ export const seriesDataReducer = createReducer(
       isPredicted: entityToUpdate.isPredicted,
     });
 
-    return { ...state };
+    return { ...state, seriesData: new Map(state.seriesData) };
   })
 );

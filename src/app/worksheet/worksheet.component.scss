@@ -5,3 +5,7 @@
 .grid-disabled {
   @apply opacity-75 pointer-events-none;
 }
+
+.finished {
+  --mdc-linear-progress-active-indicator-color: rgba(34, 197, 94, 0.8);
+}

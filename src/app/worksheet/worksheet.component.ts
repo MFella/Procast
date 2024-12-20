@@ -1,6 +1,5 @@
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   inject,
   Input,
@@ -19,10 +18,15 @@ import {
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
 import { NgClass } from '@angular/common';
+import {
+  MatProgressBar,
+  MatProgressBarModule,
+  ProgressBarMode,
+} from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-worksheet',
-  imports: [AgGridModule, NgClass],
+  imports: [AgGridModule, NgClass, MatProgressBarModule],
   templateUrl: './worksheet.component.html',
   styleUrl: './worksheet.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,10 +38,15 @@ export class WorksheetComponent implements OnInit {
   @Input({ required: true })
   isPredictionInProgress!: boolean;
 
-  store: Store = inject(Store);
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  @Input()
+  computationProgressValue: number = 0;
 
-  monthsInYear = Array.from({ length: 12 }, (item, i) => {
+  @Input()
+  progressBarMode: ProgressBarMode = 'determinate';
+
+  store: Store = inject(Store);
+
+  monthsInYear = Array.from({ length: 12 }, (_, i) => {
     return new Date(0, i).toLocaleString('en-US', { month: 'long' });
   });
 
@@ -47,7 +56,6 @@ export class WorksheetComponent implements OnInit {
   ];
 
   gridOptions: GridOptions = {
-    // isFullWidthRow: () => true,
     readOnlyEdit: true,
     onCellEditRequest: this.handleCellEditRequest.bind(this),
   };

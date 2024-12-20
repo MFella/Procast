@@ -62,6 +62,10 @@ import {
 } from '../config/sidebar-config';
 import { TypeHelper } from '../_helpers/type-helper';
 import { AlertService } from '../_services/alert.service';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { ProgressBarMode } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'app-workspace',
@@ -76,6 +80,9 @@ import { AlertService } from '../_services/alert.service';
     MatCheckboxModule,
     NgClass,
     MatTooltipModule,
+    MatTabsModule,
+    MatIconModule,
+    MatButtonModule,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
@@ -83,6 +90,7 @@ import { AlertService } from '../_services/alert.service';
 })
 export class WorkspaceComponent implements OnInit {
   private chartComponent = viewChild.required(BaseChartDirective);
+  private worksheetNameInput = viewChild.required('worksheetNameInput');
   private static PREDICTION_WORKER: Worker;
 
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
@@ -120,7 +128,11 @@ export class WorkspaceComponent implements OnInit {
     preferredExtension: new FormControl('csv', [Validators.required]),
   });
 
-  isExpanded = false;
+  isEditingWorksheetName = false;
+  worksheetName = 'Untilted';
+  computationProgressValue: number = 0;
+  computationProgressBarMode: ProgressBarMode = 'determinate';
+
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta', 'adam'];
   canStartPrediction = false;
   canSaveResults = false;
@@ -158,7 +170,7 @@ export class WorkspaceComponent implements OnInit {
     datasets: [
       {
         data: [65, 59, NaN, 81, 56, NaN, 72],
-        label: 'Random',
+        label: this.worksheetName,
         fill: true,
         tension: 0.5,
         borderColor: 'blue',
@@ -223,6 +235,7 @@ export class WorkspaceComponent implements OnInit {
 
   async generatePrediction(): Promise<void> {
     try {
+      this.computationProgressBarMode = 'buffer';
       this.isPredictionInProgress = true;
       let generatedPrediction: Array<number> = [];
       if (typeof Worker !== 'undefined') {
@@ -230,7 +243,8 @@ export class WorkspaceComponent implements OnInit {
       } else {
         generatedPrediction = await Predictor.generatePrediction(
           this.worksheetData,
-          this.trainingConfigFormGroup.value as TrainingConfig
+          this.trainingConfigFormGroup.value as TrainingConfig,
+          () => {}
         );
       }
 
@@ -258,7 +272,8 @@ export class WorkspaceComponent implements OnInit {
     await this.fileInteractionService.tryToWriteFile(
       this.worksheetData,
       this.fileSaveFormGroup.value?.preferredExtension ??
-        WorkspaceComponent.FILE_EXTENSION_DEFAULT
+        WorkspaceComponent.FILE_EXTENSION_DEFAULT,
+      this.worksheetName
     );
   }
 
@@ -322,6 +337,29 @@ export class WorkspaceComponent implements OnInit {
         eventSource: 'redo',
       })
     );
+  }
+
+  setEditingWorksheetNameState(isEditing: boolean = true): void {
+    this.isEditingWorksheetName = isEditing;
+    if (isEditing) {
+      setTimeout(() => {
+        const worksheetNameInput = this.worksheetNameInput();
+        if (TypeHelper.isUnknownAnObject(worksheetNameInput, 'nativeElement')) {
+          worksheetNameInput.nativeElement.focus();
+          worksheetNameInput.nativeElement.select();
+        }
+      });
+    }
+    this.changeDetectorRef.detectChanges();
+  }
+
+  submitWorksheetTitle(worksheetInputValue: string): void {
+    if (worksheetInputValue) {
+      this.worksheetName = worksheetInputValue;
+      this.changeDetectorRef.detectChanges();
+    }
+
+    this.setEditingWorksheetNameState(false);
   }
 
   private loadConfigsFromLocalStorage(): void {
@@ -464,6 +502,10 @@ export class WorkspaceComponent implements OnInit {
       WorkspaceComponent.PREDICTION_WORKER.onmessage = ({ data }) => {
         if (data.event === 'success' && 'prediction' in data) {
           resolve(data.prediction);
+        } else if (data.event === 'progress') {
+          this.computationProgressBarMode = 'determinate';
+          this.computationProgressValue = data.value;
+          this.changeDetectorRef.detectChanges();
         } else {
           reject({ message: data.message });
         }

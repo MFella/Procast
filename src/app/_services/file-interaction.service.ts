@@ -39,7 +39,8 @@ export class FileInteractionService {
 
   async tryToWriteFile(
     worksheetRowData: Map<string, WorksheetRowData>,
-    preferredExtension: PreferredExtension
+    preferredExtension: PreferredExtension,
+    worksheetTitle: string = 'Predicted Data'
   ): Promise<void> {
     const workbookToSave = utils.book_new();
     const sheetOfData = utils.json_to_sheet(
@@ -51,11 +52,15 @@ export class FileInteractionService {
         ],
       }
     );
-    utils.book_append_sheet(workbookToSave, sheetOfData, 'Predicted Data');
-    return writeFile(workbookToSave, `Predicted Data.${preferredExtension}`, {
-      bookType: preferredExtension,
-      type: 'buffer',
-    });
+    utils.book_append_sheet(workbookToSave, sheetOfData, worksheetTitle);
+    return writeFile(
+      workbookToSave,
+      `${worksheetTitle}_${new Date().toISOString()}.${preferredExtension}`,
+      {
+        bookType: preferredExtension,
+        type: 'buffer',
+      }
+    );
   }
 
   private async parseXlsxFile(xlsxFile: File): Promise<Map<string, any>> {

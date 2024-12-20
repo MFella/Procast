@@ -1,6 +1,6 @@
 <div class="grid grid-cols-4 grid-rows-6 gap-4 h-full min-h-screen">
   <div
-    class="chart__container col-span-3 row-span-4 m-4 p-4 border border-slate-200 rounded-xl"
+    class="chart__container col-span-3 row-span-4 m-2 p-4 border border-slate-200 rounded-xl"
     [ngClass]="{
       'prediction-not-generated': isPredictionInProgress
     }"
@@ -401,11 +401,61 @@
   </div>
 
   <div class="col-span-3 row-span-2 col-start-1 row-start-5">
-    <app-worksheet
-      [worksheetData]="worksheetData"
-      [isPredictionInProgress]="isPredictionInProgress"
-      class="max-h-52 block overflow-hidden"
-    />
+    <mat-tab-group class="px-4" mat-stretch-tabs="false" mat-align-tabs="start">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          @if (isEditingWorksheetName) {
+          <div class="flex gap-2 justify-center items-center">
+            <mat-form-field class="w-32">
+              <input
+                #worksheetNameInput
+                matInput
+                [value]="worksheetName"
+                (keydown.enter)="submitWorksheetTitle(worksheetNameInput.value)"
+              />
+              @if (worksheetName) {
+              <button
+                matSuffix
+                mat-icon-button
+                aria-label="Close"
+                (click)="setEditingWorksheetNameState(false)"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+              }
+            </mat-form-field>
+            <button
+              mat-mini-fab
+              aria-label="Submit edit sheet title"
+              class="scale-[.8]"
+              (click)="submitWorksheetTitle(worksheetNameInput.value)"
+            >
+              <mat-icon>check</mat-icon>
+            </button>
+          </div>
+
+          } @else {
+          <span class="text-base">{{ worksheetName }}</span>
+          <button
+            mat-mini-fab
+            aria-label="Edit sheet title button"
+            class="scale-[.6] transition-all opacity-35 hover:opacity-100"
+            (click)="setEditingWorksheetNameState()"
+          >
+            <mat-icon>mode_edit</mat-icon>
+          </button>
+          }
+        </ng-template>
+
+        <app-worksheet
+          [worksheetData]="worksheetData"
+          [isPredictionInProgress]="isPredictionInProgress"
+          [computationProgressValue]="computationProgressValue"
+          [progressBarMode]="computationProgressBarMode"
+          class="max-h-52 block overflow-hidden"
+        />
+      </mat-tab>
+    </mat-tab-group>
   </div>
   <div class="row-span-2 col-start-4 row-start-5">
     <div

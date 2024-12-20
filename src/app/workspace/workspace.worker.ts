@@ -16,7 +16,8 @@ addEventListener('message', async ({ data }) => {
 
     const generatedPrediction = await Predictor.generatePrediction(
       data.worksheetData,
-      data.trainingConfig
+      data.trainingConfig,
+      postMessage
     );
     postMessage({ event: 'success', prediction: generatedPrediction });
   } catch (error: unknown) {
