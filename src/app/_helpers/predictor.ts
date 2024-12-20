@@ -13,7 +13,7 @@ import { PredictionSequence } from '../_typings/prediction/prediction.typings';
 export class Predictor {
   private static readonly MOMENTUM_DEFAULT = 20;
   private static readonly LEARNING_RATE_DEFAULT = 0.001;
-  private static readonly OPTIMIZER_DEFAULT: Optimizer = 'momentum';
+  private static readonly OPTIMIZER_DEFAULT: Optimizer = 'adam';
   private static readonly LOSS_FN_DEFAULT: LossFn = 'meanSquaredError';
   private static readonly BASIC_LAYER_DEFAULT: BasicLayer = 'LSTM';
   private static readonly HELP_LAYER_DEFAULT: HelpLayer = 'Dropout';

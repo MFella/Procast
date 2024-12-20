@@ -115,7 +115,7 @@ export class WorkspaceComponent implements OnInit {
     basicLayer: new FormControl('GRU', [Validators.required]),
     helpLayer: new FormControl('Dropout', [Validators.required]),
     lossFn: new FormControl('meanSquaredError', [Validators.required]),
-    optimizer: new FormControl('momentum', [Validators.required]),
+    optimizer: new FormControl('adam', [Validators.required]),
     learningRate: new FormControl(0.001, []),
   });
 
