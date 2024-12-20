@@ -57,7 +57,16 @@ export class WorksheetComponent implements OnInit {
 
   gridOptions: GridOptions = {
     readOnlyEdit: true,
+    suppressScrollOnNewData: true,
     onCellEditRequest: this.handleCellEditRequest.bind(this),
+    getRowStyle: (params) => {
+      if (params.data?.isPredicted) {
+        return {
+          background: 'rgb(226 232 240)',
+        };
+      }
+      return;
+    },
   };
 
   get convertedWorksheetData(): Array<WorksheetRowData> {

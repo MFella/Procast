@@ -133,7 +133,7 @@ export class WorkspaceComponent implements OnInit {
   computationProgressValue: number = 0;
   computationProgressBarMode: ProgressBarMode = 'determinate';
 
-  excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta', 'adam'];
+  excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta'];
   canStartPrediction = false;
   canSaveResults = false;
   generatePredictionTooltip = '';
@@ -162,7 +162,9 @@ export class WorkspaceComponent implements OnInit {
   > = preferredExtensionOptions;
 
   private isPredicted = (ctx: any, value: any) => {
-    return ctx.p0.raw.isPredicted || ctx.p1.raw.isPredicted ? value : undefined;
+    return ctx.p0?.raw?.isPredicted || ctx.p1?.raw?.isPredicted
+      ? value
+      : undefined;
   };
 
   chartData: ChartConfiguration<'line'>['data'] = {
@@ -172,15 +174,18 @@ export class WorkspaceComponent implements OnInit {
         data: [65, 59, NaN, 81, 56, NaN, 72],
         label: this.worksheetName,
         fill: true,
-        tension: 0.5,
+        tension: 0.2,
         borderColor: 'blue',
         segment: {
           borderColor: (ctx) =>
             this.isPredicted(ctx, [10, 10]) ? 'gray' : 'blue',
           borderDash: (ctx: any) => this.isPredicted(ctx, [10, 10]),
+          backgroundColor: (ctx: any) =>
+            this.isPredicted(ctx, [10, 10])
+              ? 'rgba(266, 232, 240, .4)'
+              : 'rgba(224, 242, 254, .6)',
         },
         spanGaps: true,
-        backgroundColor: 'rgba(224, 242, 254, .6)',
       },
     ],
   };
@@ -192,7 +197,7 @@ export class WorkspaceComponent implements OnInit {
       tension: {
         duration: 1000,
         easing: 'linear',
-        from: 1,
+        from: 0.1,
         to: 0,
         loop: true,
       },
@@ -290,7 +295,7 @@ export class WorkspaceComponent implements OnInit {
           label,
           {
             label,
-            value: Math.ceil((Math.random() + 10) * 50),
+            value: Math.ceil((Math.random() + 10) * 500),
           },
         ];
       });
@@ -400,7 +405,7 @@ export class WorkspaceComponent implements OnInit {
           const shouldDisableLearningRate =
             this.excludedOptimizersFromLearningRate.includes(
               formGroupValue.optimizer
-            );
+            ) && learningRateFormControl.disabled !== true;
 
           shouldDisableLearningRate && learningRateFormControl.disable();
         }

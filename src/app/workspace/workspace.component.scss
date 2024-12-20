@@ -5,7 +5,8 @@
   }
 }
 
-$overlay-label: '⌛ Prediction is not completed ⌛';
+$not-completed-overlay-label: '⌛ Prediction has not completed ⌛';
+$not-started-overlay-label: 'Prediction has not started 🚀';
 
 ::ng-deep {
   ul.chart-config {
@@ -43,7 +44,11 @@ $overlay-label: '⌛ Prediction is not completed ⌛';
   &__container {
     @apply relative;
     &.prediction-not-generated {
-      @include display-overlay($overlay-label);
+      @include display-overlay($not-completed-overlay-label);
+    }
+
+    &.prediction-not-started {
+      @include display-overlay($not-started-overlay-label);
     }
   }
 }

@@ -2,7 +2,10 @@
   <div
     class="chart__container col-span-3 row-span-4 m-2 p-4 border border-slate-200 rounded-xl"
     [ngClass]="{
-      'prediction-not-generated': isPredictionInProgress
+      'prediction-not-started':
+        isPredictionInProgress && computationProgressBarMode === 'buffer',
+      'prediction-not-generated':
+        isPredictionInProgress && computationProgressBarMode === 'determinate'
     }"
   >
     <canvas

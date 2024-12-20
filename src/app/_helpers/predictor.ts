@@ -77,23 +77,17 @@ export class Predictor {
     );
 
     // Train the model using the data.
-
     await model.fit(inputTensor, outputTensor, {
       epochs: epochSize,
       batchSize: batchSize,
       callbacks: {
-        onTrainBegin: (logs?: tf.Logs) => {
-          console.log(logs);
-        },
-        onTrainEnd: (logs?: tf.Logs) => {
-          console.log(logs);
+        onTrainEnd: () => {
           postMessageFn({
             event: 'progress',
             value: 100,
           });
         },
         onEpochBegin: (epoch: number) => {
-          console.log(epoch);
           const progressValue = Math.floor(
             (epoch / (epochSize * batchSize)) * 100
           );
