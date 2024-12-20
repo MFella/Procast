@@ -1,3 +1,7 @@
 :host {
   @apply mx-4;
 }
+
+.grid-disabled {
+  @apply opacity-75 pointer-events-none;
+}

@@ -1,6 +1,9 @@
 <ag-grid-angular
   class="ag-theme-quartz"
   style="height: 200px; width: 100%"
+  [ngClass]="{
+    'grid-disabled': isPredictionInProgress
+  }"
   [rowData]="convertedWorksheetData"
   [columnDefs]="colDefs"
   [gridOptions]="gridOptions"

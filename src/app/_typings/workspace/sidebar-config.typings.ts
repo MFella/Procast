@@ -1,3 +1,4 @@
+import { FormControl } from '@angular/forms';
 import { ChartType } from 'chart.js';
 
 export type HelpLayer = 'Dropout' | 'BatchNormalization';
@@ -37,4 +38,25 @@ type GeneralConfigEntity =
 export type GeneralConfigSelectOption<T extends GeneralConfigEntity> = {
   value: T;
   viewValue: string;
+};
+
+export type GenericFormGroup<T> = {
+  [Key in keyof T]: FormControl<T[Key] | null>;
+};
+
+export type TrainingConfig = {
+  basicLayer: BasicLayer;
+  helpLayer: HelpLayer;
+  lossFn: LossFn;
+  optimizer: Optimizer;
+  learningRate?: number;
+};
+
+export type ChartConfig = {
+  chartType: ChartType;
+  showLegend: boolean;
+};
+
+export type FileSave = {
+  preferredExtension: PreferredExtension;
 };

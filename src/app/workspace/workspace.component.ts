@@ -5,10 +5,8 @@ import {
   DestroyRef,
   inject,
   OnInit,
-  Renderer2,
   viewChild,
 } from '@angular/core';
-import * as tf from '@tensorflow/tfjs';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
@@ -32,6 +30,10 @@ import {
   GeneralConfigSelectOption,
   ShowLegend,
   PreferredExtension,
+  GenericFormGroup,
+  TrainingConfig,
+  ChartConfig,
+  FileSave,
 } from '../_typings/workspace/sidebar-config.typings';
 import { LocalStorageService } from '../local-storage.service';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
@@ -39,31 +41,27 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { NgClass } from '@angular/common';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
-import { TrainingConverter } from '../_helpers/training-converter';
-import { PredictionSequence } from '../_typings/prediction/prediction.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
 import { selectSeriesData } from '../architecture/selectors';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { SudoRedoActionPayload } from '../_typings/workspace/actions/workspace-actions.typings';
+import {
+  SudoRedoActionPayload,
+  WorkspaceWorkerMessage,
+} from '../_typings/workspace/actions/workspace-actions.typings';
 import { FileInteractionService } from '../_services/file-interaction.service';
-
-type TrainingConfigFormGroup = {
-  basicLayer: FormControl<BasicLayer | null>;
-  helpLayer: FormControl<HelpLayer | null>;
-  lossFn: FormControl<LossFn | null>;
-  optimizer: FormControl<Optimizer | null>;
-  learningRate?: FormControl<number | null>;
-};
-
-type ChartConfigFormGroup = {
-  chartType: FormControl<ChartType | null>;
-  showLegend: FormControl<boolean | null>;
-};
-
-type FileSaveFormGroup = {
-  preferredExtension: FormControl<PreferredExtension | null>;
-};
+import { Predictor } from '../_helpers/predictor';
+import {
+  basicLayerOptions,
+  chartTypeOptions,
+  helpLayerOptions,
+  lossFnOptions,
+  optimizerOptions,
+  preferredExtensionOptions,
+  showLegendOptions,
+} from '../config/sidebar-config';
+import { TypeHelper } from '../_helpers/type-helper';
+import { AlertService } from '../_services/alert.service';
 
 @Component({
   selector: 'app-workspace',
@@ -85,31 +83,27 @@ type FileSaveFormGroup = {
 })
 export class WorkspaceComponent implements OnInit {
   private chartComponent = viewChild.required(BaseChartDirective);
+  private static PREDICTION_WORKER: Worker;
 
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
   private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
-  private static readonly MOMENTUM_DEFAULT = 20;
-  private static readonly LEARNING_RATE_DEFAULT = 0.001;
-  private static readonly OPTIMIZER_DEFAULT: Optimizer = 'momentum';
-  private static readonly LOSS_FN_DEFAULT: LossFn = 'meanSquaredError';
-  private static readonly BASIC_LAYER_DEFAULT: BasicLayer = 'LSTM';
-  private static readonly HELP_LAYER_DEFAULT: HelpLayer = 'Dropout';
+  private static readonly FILE_EXTENSION_DEFAULT = 'csv';
 
   private readonly localStorageService = inject(LocalStorageService);
   private readonly matDialog = inject(MatDialog);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly store = inject(Store);
   private readonly fileInteractionService = inject(FileInteractionService);
+  readonly #destroyRef = inject(DestroyRef);
+  private readonly alertService = inject(AlertService);
 
-  #destroyRef = inject(DestroyRef);
-  private loadedData: Array<any> = [];
   worksheetData: Map<string, WorksheetRowData> = new Map<
     string,
     WorksheetRowData
   >();
   isPredictionInProgress = false;
 
-  trainingConfigFormGroup = new FormGroup<TrainingConfigFormGroup>({
+  trainingConfigFormGroup = new FormGroup<GenericFormGroup<TrainingConfig>>({
     basicLayer: new FormControl('GRU', [Validators.required]),
     helpLayer: new FormControl('Dropout', [Validators.required]),
     lossFn: new FormControl('meanSquaredError', [Validators.required]),
@@ -117,12 +111,12 @@ export class WorkspaceComponent implements OnInit {
     learningRate: new FormControl(0.001, []),
   });
 
-  chartConfigFormGroup = new FormGroup<ChartConfigFormGroup>({
+  chartConfigFormGroup = new FormGroup<GenericFormGroup<ChartConfig>>({
     showLegend: new FormControl(false, [Validators.required]),
     chartType: new FormControl('line', [Validators.required]),
   });
 
-  fileSaveFormGroup = new FormGroup<FileSaveFormGroup>({
+  fileSaveFormGroup = new FormGroup<GenericFormGroup<FileSave>>({
     preferredExtension: new FormControl('csv', [Validators.required]),
   });
 
@@ -134,124 +128,31 @@ export class WorkspaceComponent implements OnInit {
   undoActions: Array<SudoRedoActionPayload> = [];
   redoActions: Array<SudoRedoActionPayload> = [];
 
-  basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> = [
-    {
-      value: 'GRU',
-      viewValue: 'GRU',
-    },
-    {
-      value: 'LSTM',
-      viewValue: 'LSTM',
-    },
-    {
-      value: 'SimpleRNN',
-      viewValue: 'Simple RNN',
-    },
-  ];
+  basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> =
+    basicLayerOptions;
 
-  helpLayerOptions: Array<GeneralConfigSelectOption<HelpLayer>> = [
-    {
-      value: 'Dropout',
-      viewValue: 'Dropout',
-    },
-    {
-      value: 'BatchNormalization',
-      viewValue: 'Batch Normalization',
-    },
-  ];
+  helpLayerOptions: Array<GeneralConfigSelectOption<HelpLayer>> =
+    helpLayerOptions;
 
-  lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = [
-    {
-      value: 'meanSquaredError',
-      viewValue: 'Mean Squared Error',
-    },
-    {
-      value: 'meanAbsoluteError',
-      viewValue: 'Mean Absolute Error',
-    },
-    {
-      value: 'huberLoss',
-      viewValue: 'Huber Loss',
-    },
-  ];
+  lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = lossFnOptions;
 
-  optimizerOptions: Array<GeneralConfigSelectOption<Optimizer>> = [
-    {
-      value: 'sgd',
-      viewValue: 'Stochastic Gradient Descent',
-    },
-    {
-      value: 'adam',
-      viewValue: 'Adaptive Moment Estimation',
-    },
-    {
-      value: 'rmsprop',
-      viewValue: 'Root Mean Square Propagation',
-    },
-    {
-      value: 'adagrad',
-      viewValue: 'Adaptive Gradient Algorithm',
-    },
-    {
-      value: 'adadelta',
-      viewValue: 'AdaDelta',
-    },
-    {
-      value: 'momentum',
-      viewValue: 'Momentum',
-    },
-  ];
+  optimizerOptions: Array<GeneralConfigSelectOption<Optimizer>> =
+    optimizerOptions;
 
-  chartTypeOptions: Array<GeneralConfigSelectOption<ChartType>> = [
-    {
-      value: 'bar',
-      viewValue: 'Bar',
-    },
-    {
-      value: 'line',
-      viewValue: 'Line',
-    },
-    {
-      value: 'pie',
-      viewValue: 'Pie',
-    },
-    {
-      value: 'radar',
-      viewValue: 'Radar',
-    },
-    {
-      value: 'scatter',
-      viewValue: 'Scatter',
-    },
-  ];
+  chartTypeOptions: Array<GeneralConfigSelectOption<ChartType>> =
+    chartTypeOptions;
 
-  showLegendOptions: Array<GeneralConfigSelectOption<ShowLegend>> = [
-    {
-      value: 'Yes',
-      viewValue: 'Yes',
-    },
-    {
-      value: 'No',
-      viewValue: 'No',
-    },
-  ];
+  showLegendOptions: Array<GeneralConfigSelectOption<ShowLegend>> =
+    showLegendOptions;
 
   preferredExtensionOptions: Array<
     GeneralConfigSelectOption<PreferredExtension>
-  > = [
-    {
-      value: 'csv',
-      viewValue: 'CSV',
-    },
-    {
-      value: 'xlsx',
-      viewValue: 'XLSX',
-    },
-  ];
+  > = preferredExtensionOptions;
 
   private isPredicted = (ctx: any, value: any) => {
     return ctx.p0.raw.isPredicted || ctx.p1.raw.isPredicted ? value : undefined;
   };
+
   chartData: ChartConfiguration<'line'>['data'] = {
     labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
     datasets: [
@@ -272,10 +173,9 @@ export class WorkspaceComponent implements OnInit {
     ],
   };
 
-  lineChartOptions: ChartOptions<ChartType> = {
+  chartOptions: ChartOptions<ChartType> = {
     responsive: true,
     maintainAspectRatio: false,
-    // aspectRatio: 1,
     animations: {
       tension: {
         duration: 1000,
@@ -322,106 +222,43 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async generatePrediction(): Promise<void> {
-    const outputLength = 2;
-    const sequenceLength = this.worksheetData.size - outputLength - 1;
+    try {
+      this.isPredictionInProgress = true;
+      let generatedPrediction: Array<number> = [];
+      if (typeof Worker !== 'undefined') {
+        generatedPrediction = await this.processMessageToWebWorker('predict');
+      } else {
+        generatedPrediction = await Predictor.generatePrediction(
+          this.worksheetData,
+          this.trainingConfigFormGroup.value as TrainingConfig
+        );
+      }
 
-    const pastData = Array.from(this.worksheetData.values()).map(
-      (data) => data.value
-    );
-    let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
-      this.trainingConfigFormGroup.value;
-    optimizer ??= WorkspaceComponent.OPTIMIZER_DEFAULT;
-    learningRate ??= WorkspaceComponent.LEARNING_RATE_DEFAULT;
-    lossFn ??= WorkspaceComponent.LOSS_FN_DEFAULT;
-    helpLayer ??= WorkspaceComponent.HELP_LAYER_DEFAULT;
-    basicLayer ??= WorkspaceComponent.BASIC_LAYER_DEFAULT;
-
-    // Define a model for linear regression
-    const model = tf.sequential();
-    const basicLayerMethod =
-      TrainingConverter.convertLayerToTensorFn<BasicLayer>(basicLayer);
-    const helpLayerMethod =
-      TrainingConverter.convertLayerToTensorFn<HelpLayer>(helpLayer);
-    model.add(
-      tf.layers[basicLayerMethod]({
-        units: 50,
-        inputShape: [sequenceLength, 1],
-        returnSequences: false,
-      })
-    );
-
-    model.add(
-      tf.layers[helpLayerMethod]({
-        rate: 0.2,
-      })
-    );
-
-    // creation of output layer
-    model.add(tf.layers.dense({ units: outputLength }));
-
-    // Prepare the model for training: Specify the loss and the optimizer.
-    model.compile({
-      loss: lossFn,
-      optimizer:
-        optimizer === 'momentum'
-          ? tf.train.momentum(learningRate, WorkspaceComponent.MOMENTUM_DEFAULT)
-          : tf.train[optimizer](learningRate),
-    });
-
-    const { inputTensor, outputTensor } = this.createPredictionSequences(
-      pastData,
-      sequenceLength
-    );
-
-    // Train the model using the data.
-
-    await model.fit(inputTensor, outputTensor, {
-      epochs: 100,
-      batchSize: 1,
-    });
-
-    const lastDataFromPast = pastData
-      .slice(-sequenceLength)
-      .map((value) => [value]);
-    const lastDataFromPastTensor = tf.tensor3d([lastDataFromPast]);
-
-    const prediction = model.predict(lastDataFromPastTensor) as tf.Tensor;
-    const predictedData = prediction.dataSync();
-    console.log(
-      `Next month: ${predictedData[0]}, another month: ${predictedData[1]}`
-    );
-
-    const worksheetData = structuredClone(this.worksheetData);
-
-    for (let i = 0; i < predictedData.length; i++) {
-      worksheetData.set(`Predicted No ${this.worksheetData.size + i}`, {
-        value: predictedData[i],
-        label: `Predicted No ${this.worksheetData.size + i}`,
-        isPredicted: true,
-      });
+      this.applyGeneratedPrediction(generatedPrediction);
+      this.isPredictionInProgress = false;
+    } catch (error: unknown) {
+      this.isPredictionInProgress = false;
+      if (TypeHelper.isUnknownAnObject(error, 'message')) {
+        this.alertService.showErrorSnackBar(error.message);
+      } else {
+        this.alertService.showErrorSnackBar(
+          'Unrecognized error occured during forecast generation'
+        );
+      }
     }
 
-    this.store.dispatch(
-      seriesDataActions.update({
-        seriesData: worksheetData,
-        eventSource: 'predicted',
-      })
-    );
-  }
-
-  loadData(): void {
-    /// To implement
+    this.changeDetectorRef.detectChanges();
   }
 
   async startQuickPrediction(): Promise<void> {
-    // this.generateRandomData();
     await this.generatePrediction();
   }
 
   async savePredictionResults(): Promise<void> {
     await this.fileInteractionService.tryToWriteFile(
       this.worksheetData,
-      this.fileSaveFormGroup.value?.preferredExtension ?? 'csv'
+      this.fileSaveFormGroup.value?.preferredExtension ??
+        WorkspaceComponent.FILE_EXTENSION_DEFAULT
     );
   }
 
@@ -565,44 +402,6 @@ export class WorkspaceComponent implements OnInit {
     this.localStorageService.setItems(formValueMap);
   }
 
-  private fetchWorksheetData(): void {
-    // some kind of raw data
-    this.loadedData = [];
-
-    // here, we should convert loadedData to worksheetData
-    // and make sure, that those are in right format
-    this.generateRandomData();
-  }
-
-  private createPredictionSequences(
-    data: Array<number>,
-    inputLength: number = 12,
-    outputLength: number = 2
-  ): PredictionSequence {
-    if (data.length < inputLength + outputLength) {
-      throw new Error(
-        'Cannot make prediction - provided historical data is too short to train model'
-      );
-    }
-
-    let inputSequence = [];
-    const outputSequence = [];
-
-    for (let i = 0; i < data.length - inputLength - outputLength; i++) {
-      inputSequence.push(data.slice(i, i + inputLength));
-      outputSequence.push(
-        data.slice(i + inputLength, i + inputLength + outputLength)
-      );
-    }
-
-    inputSequence = inputSequence.map((input) => input.map((value) => [value]));
-
-    return {
-      inputTensor: tf.tensor3d(inputSequence),
-      outputTensor: tf.tensor2d(outputSequence),
-    };
-  }
-
   private updateChartComponent(): void {
     this.chartData.labels = Array.from(this.worksheetData.values()).map(
       (worksheetRowData) => worksheetRowData.label
@@ -650,5 +449,54 @@ export class WorkspaceComponent implements OnInit {
 
         this.changeDetectorRef.detectChanges();
       });
+  }
+
+  private async processMessageToWebWorker(
+    workspaceWorkerMessage: WorkspaceWorkerMessage
+  ): Promise<Array<number>> {
+    if (!WorkspaceComponent.PREDICTION_WORKER) {
+      WorkspaceComponent.PREDICTION_WORKER = new Worker(
+        new URL('./workspace.worker', import.meta.url)
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      WorkspaceComponent.PREDICTION_WORKER.onmessage = ({ data }) => {
+        if (data.event === 'success' && 'prediction' in data) {
+          resolve(data.prediction);
+        } else {
+          reject({ message: data.message });
+        }
+      };
+
+      WorkspaceComponent.PREDICTION_WORKER.onerror = ({}) => {
+        reject('Error occured during generation of forecast in service worker');
+      };
+
+      WorkspaceComponent.PREDICTION_WORKER.postMessage({
+        message: workspaceWorkerMessage,
+        worksheetData: this.worksheetData,
+        trainingConfig: this.trainingConfigFormGroup.value,
+      });
+    });
+  }
+
+  private applyGeneratedPrediction(generatedPrediction: Array<number>): void {
+    const worksheetData = structuredClone(this.worksheetData);
+
+    for (let i = 0; i < generatedPrediction.length; i++) {
+      worksheetData.set(`Predicted No ${this.worksheetData.size + i}`, {
+        value: parseInt(generatedPrediction[i] as any),
+        label: `Predicted No ${this.worksheetData.size + i}`,
+        isPredicted: true,
+      });
+    }
+
+    this.store.dispatch(
+      seriesDataActions.update({
+        seriesData: worksheetData,
+        eventSource: 'predicted',
+      })
+    );
   }
 }

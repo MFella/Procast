@@ -1,3 +1,12 @@
+@mixin display-overlay($message) {
+  &::before {
+    @apply absolute top-0 left-0 w-full h-full backdrop-blur-sm text-center flex items-center justify-center transition-all;
+    content: $message;
+  }
+}
+
+$overlay-label: '⌛ Prediction is not completed ⌛';
+
 ::ng-deep {
   ul.chart-config {
     .mat-mdc-form-field-subscript-wrapper {
@@ -13,14 +22,8 @@
 .chart {
   &__container {
     @apply relative;
-    .chart-not-generated {
-      &::before {
-        @apply absolute top-0 left-0 w-full h-full backdrop-blur-sm text-center flex items-center justify-center;
-        content: '⌛ Generation is not started/completed';
-      }
-    }
-    &::before {
-      // @apply chart-not-generated;
+    &.prediction-not-generated {
+      @include display-overlay($overlay-label);
     }
   }
 }

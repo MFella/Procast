@@ -13,3 +13,5 @@ export type WorksheetUpdateEventSource =
   | 'randomized'
   | 'predicted'
   | 'initialized';
+
+export type WorkspaceWorkerMessage = 'predict';

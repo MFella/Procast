@@ -21,7 +21,8 @@ export class TrainingConverter {
       case 'BatchNormalization':
         return 'batchNormalization' as any;
       default:
-        throw new Error('Cannot recognize this type of layer: ', layer as any);
+        throw new Error('Cannot recognize this type of layer: ' + layer);
     }
+    0;
   }
 }
