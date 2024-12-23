@@ -1,59 +1,108 @@
-# Procast
+# 📈 Procast
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.0.2.
+Would you like to estimate the future based on current data? The main purpose of this application is to forecast for a specific time serie. Have a [try](https://procast-ochre.vercel.app/)!
 
-## Development server
+## ✨ Main features
 
-To start a local development server, run:
+Main functionalities of an app:
 
-```bash
-ng serve
-```
+<ol>
+<li><b>Config panel</b> - the following things can be configured
+<ul style="list-style-type: square;">
+<li><b>Training configuration</b> - user can chose or manipulate of several training options (bolded ones are default values):
+    <ul>
+        <li><i>Basic layer</i> - LSTM, <b>GRU</b>, SimpleRNN</li>
+        <li><i>Help layer</i> - <b>Dropout</b>, BatchNormalization</li>
+        <li><i>Loss Function</i> - <b>meanSquaredError</b>, meanAbsoluteError, huberLoss</li>
+        <li><i>Optimizer</i> - <b>adam</b>, sgd, rmsprop, adagrad, adadelta, momentum</li>
+        <li><i>Learning Rate</i> - range from <b>0.001</b> to 20</li>
+    </ul>
+</li>
+<li><b>Chart configuration</b>
+    <ul>
+    <li><i>Chart type</i> - <b>line</b>, bar, scatter</li>
+    <li><i>Show Legend</i> - <b>No</b>/Yes</li>
+    </ul>
+</li>
+<li><b>Chart configuration</b>
+    <ul>
+        <li><i>Chart type</i> - <b>line</b>, bar, scatter</li>
+        <li><i>Show Legend</i> - <b>No</b>/Yes</li>
+    </ul>
+</li>
+<li><b>File save config</b> - associated with "export to file" func
+    <ul>
+        <li><i>Preferred extension</i> - <b>csv</b>, xlsx</li>
+    </ul>
+</li>
+</ul>
+Every config property is stored in local storage
+</li>
+<li>
+    Action panel
+    <ul style="list-style-type: square;">
+        <li><b>Generate prediction</b> - actually, this is the place when the fun begins. This one will trigger 'prediction' cycle which consider:
+        <ul style="list-style-type: lower-alpha">
+            <li>Adding basic, help, output layers</li>
+            <li>Prepare model for training</li>
+            <li>Create prediction sequences</li>
+            <li>Generation of output predictions</li>
+        </ul>
+        </li>
+        <li><b>Random</b> - it will randomize input data</li>
+        <li><b>Load data</b> - data to predict can be loaded from csv/xlsx files</li>
+        <li><b>Save data</b> - export generated sheet/data to file. Supported extensions: csv/xlsx</li>
+        <li><b>Undo/redo</b> - revert/"un-revert" change of data set. Maximum threshold ("cache number") of this action is <b>20</b></li>
+    </ul>
+</li>
+<li>
+Worksheet - table which displays current sheet and data in form of table 
+<ul style="list-style-type: square;">
+    <li><b>Edit</b> current sheet name - this name will be used in exported file</li>
+    <li><b>Edit</b> current loaded data</li>
+</ul>
+</li>
+</ol>
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+> [!NOTE]  
+> Some of values used in prediction process are hardcoded, eg. epochSize (100), batchSize (1), outputLength (2). These will be customizable in the future.
 
-## Code scaffolding
+> [!IMPORTANT]  
+> In order to load data, sheet needs to have two cells named 'label' and 'value'. 'value' cells are in restricted format - only 'numbers' are allowed
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## ⚒ Architecture
 
-```bash
-ng generate component component-name
-```
+<img style="width: 100%" src="https://raw.githubusercontent.com/MFella/procast/refs/heads/master/public/overall-architecture.svg" />
+<br>
+From above diagram, we can see that application is making usage of web worker. Tensorflow computations seems to be really heavy (create, compile and training of model), and it might impact on user experience. That's why web worker is responsible for making such actions.
+<br>
+<b>Notes:</b>
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+1. Predict action is triggered by main thread, and sent to web worker (in order to make computations);
+2. Web worker can send actions to main thread:
 
-```bash
-ng generate --help
-```
+- **success** - when computation finished, and next predicted data (outputLength) are delivered
+- **progress** - when the next every tenth epoch was done (user can see progress on UI screen)
+- **fail** - when something went wrong with computations (eg wrong data).
 
-## Building
+## 🌠 Next features
 
-To build the project run:
+<ol>
+<li>Make log-in functionality (make usage of generic-auth component)</li>
+<li>Save prediction result to AWS S3 storage (for logged users)</li>
+<li>Implement multiple figures functionality (multiple sheets)</li>
+</ol>
 
-```bash
-ng build
-```
+## 💻 Tech Stack
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+|    Technology    |   Version    |
+| :--------------: | :----------: |
+|     Angular      |   ^19.0.0    |
+| Angular Material |   ^19.0.2    |
+|     Tailwind     |   ^3.4.16    |
+|       RxJS       |    ~7.8.0    |
+|       NgRx       | ^19.0.0-rc.0 |
+|  Tensorflow.js   |   ^4.22.0    |
+|     Chart.js     |    ^4.3.0    |
+|     Ag Grid      |   ^32.3.3    |
+|     SheetJS      |   ^0.18.5    |

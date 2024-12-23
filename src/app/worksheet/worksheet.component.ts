@@ -62,7 +62,7 @@ export class WorksheetComponent implements OnInit {
     getRowStyle: (params) => {
       if (params.data?.isPredicted) {
         return {
-          background: 'rgb(226 232 240)',
+          background: 'rgba(226, 232, 240, .4)',
         };
       }
       return;
