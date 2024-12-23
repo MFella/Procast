@@ -1,5 +1,6 @@
 :host {
   @apply mx-4;
+  --mdc-linear-progress-active-indicator-color: rgba(196, 181, 253, 1);
 }
 
 .grid-disabled {
@@ -8,4 +9,22 @@
 
 .finished {
   --mdc-linear-progress-active-indicator-color: rgba(34, 197, 94, 0.8);
+}
+
+.preparing {
+  --mdc-linear-progress-active-indicator-color: rgba(34, 211, 238, 0.4);
+}
+
+.failed {
+  --mdc-linear-progress-active-indicator-color: rgba(238, 34, 34, 0.6);
+}
+
+::ng-deep {
+  .mat-mdc-tab-labels {
+    @apply border border-slate-100 rounded-xl overflow-hidden;
+  }
+
+  .mat-mdc-tab .mdc-tab-indicator__content--underline {
+    @apply border-indigo-200 shadow-inner w-full h-full;
+  }
 }

@@ -3,7 +3,9 @@
   [mode]="progressBarMode"
   [value]="computationProgressValue"
   [ngClass]="{
-    finished: computationProgressValue === 100
+    finished: computationProgressValue === 100 && !lastPredictionFailed,
+    preparing: progressBarMode === 'query',
+    failed: lastPredictionFailed
   }"
 ></mat-progress-bar>
 <ag-grid-angular

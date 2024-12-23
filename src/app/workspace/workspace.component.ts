@@ -59,6 +59,7 @@ import {
   optimizerOptions,
   preferredExtensionOptions,
   showLegendOptions,
+  trainingDefaultConfig,
 } from '../config/sidebar-config';
 import { TypeHelper } from '../_helpers/type-helper';
 import { AlertService } from '../_services/alert.service';
@@ -110,13 +111,22 @@ export class WorkspaceComponent implements OnInit {
     WorksheetRowData
   >();
   isPredictionInProgress = false;
+  lastPredictionFailed = false;
 
   trainingConfigFormGroup = new FormGroup<GenericFormGroup<TrainingConfig>>({
-    basicLayer: new FormControl('GRU', [Validators.required]),
-    helpLayer: new FormControl('Dropout', [Validators.required]),
-    lossFn: new FormControl('meanSquaredError', [Validators.required]),
-    optimizer: new FormControl('adam', [Validators.required]),
-    learningRate: new FormControl(0.001, []),
+    basicLayer: new FormControl(trainingDefaultConfig.basicLayer, [
+      Validators.required,
+    ]),
+    helpLayer: new FormControl(trainingDefaultConfig.helpLayer, [
+      Validators.required,
+    ]),
+    lossFn: new FormControl(trainingDefaultConfig.lossFn, [
+      Validators.required,
+    ]),
+    optimizer: new FormControl(trainingDefaultConfig.optimizer, [
+      Validators.required,
+    ]),
+    learningRate: new FormControl(trainingDefaultConfig.learningRate, []),
   });
 
   chartConfigFormGroup = new FormGroup<GenericFormGroup<ChartConfig>>({
@@ -240,7 +250,8 @@ export class WorkspaceComponent implements OnInit {
 
   async generatePrediction(): Promise<void> {
     try {
-      this.computationProgressBarMode = 'buffer';
+      this.lastPredictionFailed = false;
+      this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
       let generatedPrediction: Array<number> = [];
       if (typeof Worker !== 'undefined') {
@@ -257,6 +268,7 @@ export class WorkspaceComponent implements OnInit {
       this.isPredictionInProgress = false;
     } catch (error: unknown) {
       this.isPredictionInProgress = false;
+      this.lastPredictionFailed = true;
       if (TypeHelper.isUnknownAnObject(error, 'message')) {
         this.alertService.showErrorSnackBar(error.message);
       } else {

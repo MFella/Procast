@@ -44,6 +44,9 @@ export class WorksheetComponent implements OnInit {
   @Input()
   progressBarMode: ProgressBarMode = 'determinate';
 
+  @Input()
+  lastPredictionFailed: boolean = false;
+
   store: Store = inject(Store);
 
   monthsInYear = Array.from({ length: 12 }, (_, i) => {

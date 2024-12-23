@@ -2,21 +2,15 @@ import { WorksheetRowData } from '../_typings/worksheet.typings';
 import {
   BasicLayer,
   HelpLayer,
-  LossFn,
-  Optimizer,
   TrainingConfig,
 } from '../_typings/workspace/sidebar-config.typings';
 import * as tf from '@tensorflow/tfjs';
 import { TrainingConverter } from './training-converter';
 import { PredictionSequence } from '../_typings/prediction/prediction.typings';
+import { trainingDefaultConfig } from '../config/sidebar-config';
 
 export class Predictor {
   private static readonly MOMENTUM_DEFAULT = 20;
-  private static readonly LEARNING_RATE_DEFAULT = 0.001;
-  private static readonly OPTIMIZER_DEFAULT: Optimizer = 'adam';
-  private static readonly LOSS_FN_DEFAULT: LossFn = 'meanSquaredError';
-  private static readonly BASIC_LAYER_DEFAULT: BasicLayer = 'LSTM';
-  private static readonly HELP_LAYER_DEFAULT: HelpLayer = 'Dropout';
 
   static async generatePrediction(
     worksheetData: Map<string, WorksheetRowData>,
@@ -33,11 +27,12 @@ export class Predictor {
     );
     let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
       trainingConfig;
-    optimizer ??= Predictor.OPTIMIZER_DEFAULT;
-    learningRate ??= Predictor.LEARNING_RATE_DEFAULT;
-    lossFn ??= Predictor.LOSS_FN_DEFAULT;
-    helpLayer ??= Predictor.HELP_LAYER_DEFAULT;
-    basicLayer ??= Predictor.BASIC_LAYER_DEFAULT;
+    optimizer ??= trainingDefaultConfig.optimizer;
+    learningRate ??= trainingDefaultConfig.learningRate;
+    lossFn ??= trainingDefaultConfig.lossFn;
+    helpLayer ??= trainingDefaultConfig.helpLayer;
+    basicLayer ??= trainingDefaultConfig.basicLayer;
+    learningRate ??= trainingDefaultConfig.learningRate!;
 
     // Define a model for linear regression
     const model = tf.sequential();
@@ -64,7 +59,7 @@ export class Predictor {
 
     // Prepare the model for training: Specify the loss and the optimizer.
     model.compile({
-      loss: lossFn,
+      loss: tf.losses[lossFn],
       optimizer:
         optimizer === 'momentum'
           ? tf.train.momentum(learningRate, Predictor.MOMENTUM_DEFAULT)

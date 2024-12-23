@@ -11,11 +11,11 @@ Main functionalities of an app:
 <ul style="list-style-type: square;">
 <li><b>Training configuration</b> - user can chose or manipulate of several training options (bolded ones are default values):
     <ul>
-        <li><i>Basic layer</i> - LSTM, <b>GRU</b>, SimpleRNN</li>
+        <li><i>Basic layer</i> - <b>LSTM</b>, GRU, SimpleRNN</li>
         <li><i>Help layer</i> - <b>Dropout</b>, BatchNormalization</li>
-        <li><i>Loss Function</i> - <b>meanSquaredError</b>, meanAbsoluteError, huberLoss</li>
-        <li><i>Optimizer</i> - <b>adam</b>, sgd, rmsprop, adagrad, adadelta, momentum</li>
-        <li><i>Learning Rate</i> - range from <b>0.001</b> to 20</li>
+        <li><i>Loss Function</i> - <b>huberLoss</b>, meanSquaredError, absoluteDifference, computeWeightedLoss, hingeLoss, logLoss, sigmoidCrossEntropy, softmaxCrossEntropy</li>
+        <li><i>Optimizer</i> - <b>rmsprop</b>, sgd, adam, adagrad, adadelta, momentum</li>
+        <li><i>Learning Rate</i> - range from 0.001 to 30 (default: <b>20</b></li>
     </ul>
 </li>
 <li><b>Chart configuration</b>

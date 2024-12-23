@@ -1,5 +1,6 @@
 import { FormControl } from '@angular/forms';
 import { ChartType } from 'chart.js';
+import { losses } from '@tensorflow/tfjs';
 
 export type HelpLayer = 'Dropout' | 'BatchNormalization';
 export type BasicLayer = 'LSTM' | 'GRU' | 'SimpleRNN';
@@ -11,7 +12,7 @@ export type TensorflowLayerFnMappings = {
   ['BatchNormalization']: 'batchNormalization';
 };
 
-type LossRegressionFn = 'meanSquaredError' | 'meanAbsoluteError' | 'huberLoss';
+type LossRegressionFn = Exclude<keyof typeof losses, 'cosineDistance'>;
 
 export type LossFn = LossRegressionFn;
 export type Optimizer =

@@ -19,6 +19,19 @@ addEventListener('message', async ({ data }) => {
       data.trainingConfig,
       postMessage
     );
+
+    if (
+      generatedPrediction.length !== 2 ||
+      isNaN(generatedPrediction[0]) ||
+      isNaN(generatedPrediction[1])
+    ) {
+      postMessage({
+        event: 'fail',
+        message: 'Prediction failed - check training config',
+      });
+      return;
+    }
+
     postMessage({ event: 'success', prediction: generatedPrediction });
   } catch (error: unknown) {
     if (TypeHelper.isUnknownAnObject(error, 'message')) {

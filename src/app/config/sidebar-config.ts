@@ -7,7 +7,9 @@ import {
   Optimizer,
   PreferredExtension,
   ShowLegend,
+  TrainingConfig,
 } from '../_typings/workspace/sidebar-config.typings';
+import { losses } from '@tensorflow/tfjs';
 
 const basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> = [
   {
@@ -35,20 +37,14 @@ const helpLayerOptions: Array<GeneralConfigSelectOption<HelpLayer>> = [
   },
 ];
 
-const lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = [
-  {
-    value: 'meanSquaredError',
-    viewValue: 'Mean Squared Error',
-  },
-  {
-    value: 'meanAbsoluteError',
-    viewValue: 'Mean Absolute Error',
-  },
-  {
-    value: 'huberLoss',
-    viewValue: 'Huber Loss',
-  },
-];
+const lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = Object.keys(
+  losses
+).map((loss) => ({
+  value: loss as LossFn,
+  viewValue:
+    loss[0]?.toUpperCase() +
+    loss.slice(1).replace(/([a-zA-Z])(?=[A-Z])/g, '$1 '),
+}));
 
 const optimizerOptions: Array<GeneralConfigSelectOption<Optimizer>> = [
   {
@@ -124,6 +120,14 @@ const preferredExtensionOptions: Array<
   },
 ];
 
+const trainingDefaultConfig: TrainingConfig = {
+  basicLayer: 'LSTM',
+  helpLayer: 'Dropout',
+  learningRate: 20,
+  lossFn: 'huberLoss',
+  optimizer: 'rmsprop',
+};
+
 export {
   preferredExtensionOptions,
   showLegendOptions,
@@ -132,4 +136,5 @@ export {
   helpLayerOptions,
   optimizerOptions,
   lossFnOptions,
+  trainingDefaultConfig,
 };
