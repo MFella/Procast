@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:procast": "node dist/procast/server/server.mjs",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "populate-env": "npx tsx ./convert-env.ts"
   },
   "private": true,
   "dependencies": {
@@ -24,6 +25,9 @@
     "@angular/platform-server": "^19.0.0",
     "@angular/router": "^19.0.0",
     "@angular/ssr": "^19.0.2",
+    "@aws-sdk/client-s3": "^3.717.0",
+    "@aws-sdk/core": "^3.716.0",
+    "@aws-sdk/types": "^3.714.0",
     "@ngrx/store": "^19.0.0-rc.0",
     "@tensorflow/tfjs": "^4.22.0",
     "@tsparticles/angular": "^3.0.0",
@@ -53,6 +57,7 @@
     "@types/node": "^18.18.0",
     "angular-eslint": "19.0.2",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.7",
     "eslint": "^9.16.0",
     "jasmine-core": "~5.4.0",
     "karma": "~6.4.0",

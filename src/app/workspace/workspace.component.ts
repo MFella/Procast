@@ -227,7 +227,7 @@ export class WorkspaceComponent implements OnInit {
 
   openLoadDataModal(): void {
     const matDialogRef = this.matDialog.open(LoadDataComponent, {
-      width: '500px',
+      width: '700px',
       enterAnimationDuration: 200,
       exitAnimationDuration: 300,
     });

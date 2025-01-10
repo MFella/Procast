@@ -6,3 +6,6 @@ export type LoadDataEventPayloads = {
     message: string;
   };
 };
+
+// [name, fileType]
+export type DisplayPredefinedFile = [string, string];
