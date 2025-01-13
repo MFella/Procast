@@ -25,13 +25,18 @@ $not-started-overlay-label: 'Prediction has not started 🚀';
     @apply mb-2;
   }
   .mat-mdc-tab-labels {
-    @apply h-16;
+    @apply h-16 relative;
 
     .mat-mdc-tab {
       @apply h-full w-56;
     }
     .mat-mdc-form-field-subscript-wrapper {
       @apply hidden;
+    }
+
+    &::after {
+      @apply block absolute w-full -bottom-2 text-center;
+      content: 'hehe';
     }
   }
 }

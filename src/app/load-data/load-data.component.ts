@@ -31,25 +31,20 @@ export class LoadDataComponent {
 
   isPredefinedDataVisible = false;
   predefinedFileList: Array<DisplayPredefinedFile> = [];
-  selectedFile = '';
+  selectedExternalFile = '';
   canLoadFile = false;
+  parsedFile: Map<string, any> = new Map<string, any>();
 
   async loadFileFromLocalDestination($event: Event): Promise<void> {
     try {
+      if (($event.target as unknown as HTMLInputElement).files) {
+      }
       const parsedFile = await this.fileInteractionService.readAndParseFile(
         ($event.target as unknown as HTMLInputElement).files
       );
 
       if (parsedFile) {
-        this.matDialogRef.close({
-          event: 'success',
-          data: { seriesData: parsedFile },
-        });
-      } else {
-        this.matDialogRef.close({
-          event: 'fail',
-          data: { message: 'Parsing of file failed' },
-        });
+        this.parsedFile = parsedFile;
       }
     } catch (error: unknown) {
       if (TypeHelper.isUnknownAnObject<'message'>(error)) {
@@ -72,7 +67,7 @@ export class LoadDataComponent {
       }
     }
 
-    this.canLoadFile = this.selectedFile !== '';
+    this.canLoadFile = this.selectedExternalFile !== '';
     this.isPredefinedDataVisible = !shouldHide;
     this.changeDetectorRef.detectChanges();
   }
@@ -82,8 +77,33 @@ export class LoadDataComponent {
       (_, index) => predefinedFileIndex === index
     )![0];
 
-    this.canLoadFile = this.selectedFile !== fileToSelect;
-    this.selectedFile = this.canLoadFile ? fileToSelect : '';
+    this.canLoadFile = this.selectedExternalFile !== fileToSelect;
+    this.selectedExternalFile = this.canLoadFile ? fileToSelect : '';
     this.changeDetectorRef.detectChanges();
+  }
+
+  async loadFile(): Promise<void> {
+    if (this.parsedFile?.size) {
+      this.matDialogRef.close({
+        event: 'success',
+        data: { seriesData: this.parsedFile },
+      });
+      return;
+    }
+
+    if (this.selectedExternalFile) {
+      const defaultFileContent =
+        await this.restService.fetchDefaultFileContentFromAwsS3(
+          this.selectedExternalFile
+        );
+
+      if (defaultFileContent?.size) {
+        this.parsedFile = defaultFileContent;
+        this.matDialogRef.close({
+          event: 'success',
+          data: { seriesData: this.parsedFile },
+        });
+      }
+    }
   }
 }

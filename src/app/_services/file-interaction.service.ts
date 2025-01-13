@@ -9,6 +9,7 @@ import { PreferredExtension } from '../_typings/workspace/sidebar-config.typings
 export class FileInteractionService {
   private static readonly RESERVED_LABEL_HEADER_TEXT = 'label';
   private static readonly RESERVED_VALUE_HEADER_TEXT = 'value';
+  private static readonly MAP_SIZE_SHRINK_THRESHOLD = 100;
 
   private static readonly ALLOWED_FILE_MIME_TYPES: [string, string] = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -63,46 +64,15 @@ export class FileInteractionService {
     );
   }
 
-  private async parseXlsxFile(xlsxFile: File): Promise<Map<string, any>> {
-    const arrayBuffer = await xlsxFile.arrayBuffer();
-    const parsedWorkbook = await read(arrayBuffer);
-    const firstWorksheet = parsedWorkbook.Sheets[parsedWorkbook.SheetNames[0]];
-    const sheetData: Array<Record<string, string>> =
-      utils.sheet_to_json<Record<string, string>>(firstWorksheet);
-
-    return new Promise((resolve, reject) => {
-      try {
-        resolve(this.convertXlsxEntriesToMap(sheetData));
-      } catch (err: unknown) {
-        reject(err);
-      }
-    });
-  }
-
-  private async parseCsvFile(
-    csvFile: File
-  ): Promise<Map<string, WorksheetRowData>> {
-    return new Promise((resolve, reject) => {
-      this.fileReader.readAsText(csvFile);
-      this.fileReader.onload = (e) => {
-        let fileReaderResult: string = this.fileReader.result as string;
-        try {
-          resolve(this.convertCsvStringToMap(fileReaderResult));
-        } catch (err: unknown) {
-          reject(err);
-        }
-      };
-    });
-  }
-
-  private convertCsvStringToMap(
-    csvString: string
+  convertCsvStringToMap(
+    csvString: string,
+    shrinkSize?: number
   ): Map<string, WorksheetRowData> {
     let splittedCsvString: Array<string> = csvString
       .split('\n')
       .filter(Boolean);
 
-    const csvValues =
+    let csvValues =
       (splittedCsvString
         .map((phrase, index) => {
           // first index (headers) - dont take that into account
@@ -133,11 +103,53 @@ export class FileInteractionService {
         })
         .filter(Boolean) as Array<[string, WorksheetRowData]>) ?? [];
 
-    // presumably first value would be 'headers'
-    // those values should be ommited
-    splittedCsvString.shift();
-
+    if (
+      shrinkSize &&
+      shrinkSize > 1 &&
+      shrinkSize < Math.floor(csvValues.length / 2)
+    ) {
+      csvValues = csvValues.filter(
+        (_value, index) => index % Number(shrinkSize) === 0
+      );
+    } else if (
+      csvValues.length > FileInteractionService.MAP_SIZE_SHRINK_THRESHOLD
+    ) {
+      const dividend = parseInt(csvValues.length.toString().slice(0, -2)) + 1;
+      csvValues = csvValues.filter((_value, index) => index % dividend === 0);
+    }
     return new Map<string, WorksheetRowData>(csvValues);
+  }
+
+  private async parseXlsxFile(xlsxFile: File): Promise<Map<string, any>> {
+    const arrayBuffer = await xlsxFile.arrayBuffer();
+    const parsedWorkbook = await read(arrayBuffer);
+    const firstWorksheet = parsedWorkbook.Sheets[parsedWorkbook.SheetNames[0]];
+    const sheetData: Array<Record<string, string>> =
+      utils.sheet_to_json<Record<string, string>>(firstWorksheet);
+
+    return new Promise((resolve, reject) => {
+      try {
+        resolve(this.convertXlsxEntriesToMap(sheetData));
+      } catch (err: unknown) {
+        reject(err);
+      }
+    });
+  }
+
+  private async parseCsvFile(
+    csvFile: File
+  ): Promise<Map<string, WorksheetRowData>> {
+    return new Promise((resolve, reject) => {
+      this.fileReader.readAsText(csvFile);
+      this.fileReader.onload = (e) => {
+        let fileReaderResult: string = this.fileReader.result as string;
+        try {
+          resolve(this.convertCsvStringToMap(fileReaderResult));
+        } catch (err: unknown) {
+          reject(err);
+        }
+      };
+    });
   }
 
   private convertXlsxEntriesToMap(

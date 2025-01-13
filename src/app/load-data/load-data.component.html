@@ -66,8 +66,11 @@
                 type="checkbox"
                 class="size-4 rounded border-gray-300"
                 [id]="'Option' + $index"
-                [disabled]="selectedFile !== '' && selectedFile !== file[0]"
-                [checked]="selectedFile === file[0]"
+                [disabled]="
+                  selectedExternalFile !== '' &&
+                  selectedExternalFile !== file[0]
+                "
+                [checked]="selectedExternalFile === file[0]"
                 (change)="setSelectedFile($index, $event)"
               />
             </div>
@@ -88,33 +91,41 @@
     }
   </div>
   <hr class="my-4" />
-  <div class="action-button-group flex gap-2">
-    <button
-      mat-fab
-      extended
-      (click)="togglePredefinedData()"
-      class="!w-1/2"
-      [disabled]="!canLoadFile"
+  <div class="relative pt-8">
+    @if (selectedExternalFile) {
+    <span
+      class="selected-file-name pb-4 absolute top-0 text-xs text-slate-600 right-0 max-w-40 truncate sm:max-w-full"
+      >Selected file: {{ selectedExternalFile || parsedFile }}</span
     >
-      💾 Load
-      <div
-        class="absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
-      ></div>
-    </button>
-    <button
-      mat-fab
-      extended
-      (click)="togglePredefinedData(isPredefinedDataVisible)"
-      class="!w-1/2"
-    >
-      {{
-        isPredefinedDataVisible
-          ? '🧙‍♂️ Hide predefined data'
-          : '🚀 Show predefined data'
-      }}
-      <div
-        class="absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
-      ></div>
-    </button>
+    }
+    <div class="action-button-group flex sm:flex-row flex-col gap-2">
+      <button
+        mat-fab
+        extended
+        (click)="loadFile()"
+        [disabled]="!canLoadFile"
+        class="flex-1"
+      >
+        💾 Load
+        <div
+          class="absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
+        ></div>
+      </button>
+      <button
+        mat-fab
+        extended
+        (click)="togglePredefinedData(isPredefinedDataVisible)"
+        class="flex-1"
+      >
+        {{
+          isPredefinedDataVisible
+            ? '🧙‍♂️ Hide predefined data'
+            : '🚀 Show predefined data'
+        }}
+        <div
+          class="absolute top-0 bg-[url('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png')]"
+        ></div>
+      </button>
+    </div>
   </div>
 </div>
