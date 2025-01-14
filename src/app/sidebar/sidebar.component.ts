@@ -34,12 +34,14 @@ import { ChartType } from 'chart.js';
 import { MatSelectModule } from '@angular/material/select';
 import { LocalStorageService } from '../local-storage.service';
 import { Store } from '@ngrx/store';
-import { selectSidebarConfig } from '../architecture/selectors';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
 import { sidebarConfigActions } from '../architecture/actions/sidebar-config.actions';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-sidebar',
@@ -49,6 +51,9 @@ import { MatInputModule } from '@angular/material/input';
     MatSelectModule,
     MatCheckboxModule,
     MatInputModule,
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule,
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',

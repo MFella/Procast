@@ -15,3 +15,5 @@ export type WorksheetUpdateEventSource =
   | 'initialized';
 
 export type WorkspaceWorkerMessage = 'predict';
+
+export type DisplayConfigModal = 'config' | 'data' | 'action' | 'user';

@@ -1,6 +1,6 @@
-<div class="grid grid-cols-4 grid-rows-6 gap-4 h-full min-h-screen">
+<div class="grid sm:grid-cols-4 sm:grid-rows-6 gap-4 h-full min-h-screen">
   <div
-    class="chart__container col-span-3 row-span-4 m-2 p-4 border border-slate-200 rounded-xl"
+    class="chart__container col-span-4 row-span-6 sm:col-span-3 sm:row-span-4 sm:m-2 p-4 border-none sm:border border-slate-200 rounded-xl relative h-[80vh] w-screen m-0"
     [ngClass]="{
       'prediction-not-started':
         isPredictionInProgress && computationProgressBarMode === 'query',
@@ -20,11 +20,13 @@
     </canvas>
     }
   </div>
-  <div class="row-span-4 col-start-4 row-start-1">
-    <app-sidebar />
+  <div class="row-span-4 col-start-4 row-start-1 hidden sm:block">
+    <ng-template #sidebarTemplateRef>
+      <app-sidebar />
+    </ng-template>
   </div>
 
-  <div class="col-span-3 row-span-2 col-start-1 row-start-5">
+  <div class="col-span-3 row-span-2 col-start-1 row-start-5 hidden sm:block">
     <mat-tab-group class="px-4" mat-stretch-tabs="false" mat-align-tabs="start">
       <mat-tab>
         <ng-template mat-tab-label>
@@ -71,225 +73,334 @@
           }
         </ng-template>
 
-        <app-worksheet
-          [worksheetData]="worksheetData"
-          [isPredictionInProgress]="isPredictionInProgress"
-          [computationProgressValue]="computationProgressValue"
-          [progressBarMode]="computationProgressBarMode"
-          [lastPredictionFailed]="lastPredictionFailed"
-          class="max-h-52 block overflow-hidden"
-        />
+        <ng-template #worksheetDataTemplateRef>
+          <app-worksheet
+            [worksheetData]="worksheetData"
+            [isPredictionInProgress]="isPredictionInProgress"
+            [computationProgressValue]="computationProgressValue"
+            [progressBarMode]="computationProgressBarMode"
+            [lastPredictionFailed]="lastPredictionFailed"
+            class="block overflow-hidden w-full"
+          />
+        </ng-template>
       </mat-tab>
     </mat-tab-group>
   </div>
-  <div class="row-span-2 col-start-4 row-start-5">
-    <div
-      class="grid grid-cols-2 grid-rows-3 gap-2 w-full h-full items-center justify-center px-8 py-4"
-    >
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          [matTooltip]="generatePredictionTooltip"
-          [ngClass]="{
-            'link-disabled': !canStartPrediction || isPredictionInProgress
-          }"
-          (click)="generatePrediction()"
-        >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+  <ng-template #actionsTemplateRef>
+    <div class="row-span-2 col-start-4 row-start-5 hidden sm:block">
+      <div
+        class="grid grid-cols-2 grid-rows-3 gap-2 w-full h-full items-center justify-center px-8 py-4"
+      >
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            [matTooltip]="generatePredictionTooltip"
+            [ngClass]="{
+              'link-disabled': !canStartPrediction || isPredictionInProgress
+            }"
+            (click)="generatePrediction()"
           >
-            Generate
-          </span>
-          @if (isPredictionInProgress) {
-          <svg
-            class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Generate
+            </span>
+            @if (isPredictionInProgress) {
+            <svg
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            } @else {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
               stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          } @else {
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z"
+              />
+            </svg>
+            }
+          </a>
+        </div>
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            (click)="openLoadDataModal()"
+            [ngClass]="{
+              'link-disabled': isPredictionInProgress
+            }"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z"
-            />
-          </svg>
-          }
-        </a>
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Load
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15"
+              />
+            </svg>
+          </a>
+        </div>
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            matTooltip="Current loaded data will be overridden"
+            (click)="generateRandomData()"
+            [ngClass]="{
+              'link-disabled': isPredictionInProgress
+            }"
+          >
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Random
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
+              />
+            </svg>
+          </a>
+        </div>
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            (click)="savePredictionResults()"
+            [ngClass]="{
+              'link-disabled': !canSaveResults || isPredictionInProgress
+            }"
+          >
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Save
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M9 12l3 3m0 0 3-3m-3 3V2.25"
+              />
+            </svg>
+          </a>
+        </div>
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            (click)="performRedo()"
+            [ngClass]="{
+              'link-disabled': !redoActions.length || isPredictionInProgress
+            }"
+          >
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Redo
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+              />
+            </svg>
+          </a>
+        </div>
+        <div class="flex justify-center items-center w-full h-full">
+          <a
+            class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
+            (click)="performUndo()"
+            [ngClass]="{
+              'link-disabled': !undoActions.length || isPredictionInProgress
+            }"
+          >
+            <span
+              class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
+            >
+              Undo
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          (click)="openLoadDataModal()"
-          [ngClass]="{
-            'link-disabled': isPredictionInProgress
-          }"
+    </div>
+  </ng-template>
+
+  <div
+    class="sm:hidden absolute bottom-0 right-0 w-full h-16 border border-slate-200 rounded-t-3xl shadow-lg bg-transparent backdrop-blur-sm"
+  >
+    <div class="w-full h-full flex items-center justify-around">
+      <span
+        class="text-center flex flex-col h-full justify-center items-center gap-1 text-gray-600 transition-all text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'config'
+        }"
+        (click)="displayInteractionModal('config', sidebarTemplateRef)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
         >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
-          >
-            Load
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15"
-            />
-          </svg>
-        </a>
-      </div>
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          matTooltip="Current loaded data will be overridden"
-          (click)="generateRandomData()"
-          [ngClass]="{
-            'link-disabled': isPredictionInProgress
-          }"
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+          />
+        </svg>
+        <span class="">Config</span>
+      </span>
+      <span
+        class="text-center flex flex-col h-full justify-center items-center gap-1 text-gray-600 text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'data'
+        }"
+        (click)="displayInteractionModal('data', worksheetDataTemplateRef)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
         >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
-          >
-            Random
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
-            />
-          </svg>
-        </a>
-      </div>
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          (click)="savePredictionResults()"
-          [ngClass]="{
-            'link-disabled': !canSaveResults || isPredictionInProgress
-          }"
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"
+          />
+        </svg>
+        <span>Data</span>
+      </span>
+      <span
+        class="text-center flex flex-col items-center h-full justify-center gap-1 text-gray-600 text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'action'
+        }"
+        (click)="displayInteractionModal('action', actionsTemplateRef)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
         >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
-          >
-            Save
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M9 12l3 3m0 0 3-3m-3 3V2.25"
-            />
-          </svg>
-        </a>
-      </div>
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          (click)="performRedo()"
-          [ngClass]="{
-            'link-disabled': !redoActions.length || isPredictionInProgress
-          }"
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
+          />
+        </svg>
+
+        <span>Action</span>
+      </span>
+
+      <span
+        class="text-center flex flex-col items-center h-full justify-center gap-1 text-gray-600 text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'user'
+        }"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
         >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
-          >
-            Redo
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-            />
-          </svg>
-        </a>
-      </div>
-      <div class="flex justify-center items-center w-full h-full">
-        <a
-          class="hover:cursor-pointer group w-full h-full flex items-center justify-between gap-4 rounded-lg border border-current px-5 py-3 text-indigo-600 transition-colors hover:bg-indigo-600 focus:outline-none focus:ring active:bg-indigo-500 hover:text-white"
-          (click)="performUndo()"
-          [ngClass]="{
-            'link-disabled': !undoActions.length || isPredictionInProgress
-          }"
-        >
-          <span
-            class="font-medium transition-colors group-hover:text-white w-full text-center truncate"
-          >
-            Undo
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
-            />
-          </svg>
-        </a>
-      </div>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+          />
+        </svg>
+        <span>User</span>
+      </span>
     </div>
   </div>
 </div>

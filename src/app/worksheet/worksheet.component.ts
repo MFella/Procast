@@ -17,16 +17,17 @@ import {
 } from '../_typings/worksheet.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
-import { NgClass } from '@angular/common';
+import { AsyncPipe, NgClass, NgIf } from '@angular/common';
 import {
-  MatProgressBar,
   MatProgressBarModule,
   ProgressBarMode,
 } from '@angular/material/progress-bar';
+import { map, Observable } from 'rxjs';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-worksheet',
-  imports: [AgGridModule, NgClass, MatProgressBarModule],
+  imports: [AgGridModule, NgClass, MatProgressBarModule, AsyncPipe, NgIf],
   templateUrl: './worksheet.component.html',
   styleUrl: './worksheet.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +49,9 @@ export class WorksheetComponent implements OnInit {
   lastPredictionFailed: boolean = false;
 
   store: Store = inject(Store);
+  isMobile$: Observable<boolean> = inject(BreakpointObserver)
+    .observe([Breakpoints.Small])
+    .pipe(map((breakpointState) => breakpointState.matches));
 
   monthsInYear = Array.from({ length: 12 }, (_, i) => {
     return new Date(0, i).toLocaleString('en-US', { month: 'long' });

@@ -5,6 +5,7 @@ import {
   DestroyRef,
   inject,
   OnInit,
+  TemplateRef,
   viewChild,
 } from '@angular/core';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
@@ -19,11 +20,8 @@ import {
   ChartConfig,
   FileSave,
   Optimizer,
-  SidebarConfigChangeEvent,
   TrainingConfig,
 } from '../_typings/workspace/sidebar-config.typings';
-import { LocalStorageService } from '../local-storage.service';
-import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { NgClass } from '@angular/common';
@@ -36,6 +34,7 @@ import {
 } from '../architecture/selectors';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
+  DisplayConfigModal,
   SudoRedoActionPayload,
   WorkspaceWorkerMessage,
 } from '../_typings/workspace/actions/workspace-actions.typings';
@@ -48,6 +47,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ProgressBarMode } from '@angular/material/progress-bar';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { take } from 'rxjs';
+import { GenericModalComponent } from '../generic-modal/generic-modal.component';
 
 @Component({
   selector: 'app-workspace',
@@ -77,9 +78,7 @@ export class WorkspaceComponent implements OnInit {
 
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
   private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
-  private static readonly FILE_EXTENSION_DEFAULT = 'csv';
 
-  private readonly localStorageService = inject(LocalStorageService);
   private readonly matDialog = inject(MatDialog);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly store = inject(Store);
@@ -109,6 +108,7 @@ export class WorkspaceComponent implements OnInit {
   generatePredictionTooltip = '';
   undoActions: Array<SudoRedoActionPayload> = [];
   redoActions: Array<SudoRedoActionPayload> = [];
+  lastPerformedUserAction?: DisplayConfigModal;
 
   private isPredicted = (ctx: any, value: any) => {
     return ctx.p0?.raw?.isPredicted || ctx.p1?.raw?.isPredicted
@@ -142,6 +142,18 @@ export class WorkspaceComponent implements OnInit {
   chartOptions: ChartOptions<ChartType> = {
     responsive: true,
     maintainAspectRatio: false,
+    scales: {
+      y: {
+        ticks: {
+          display: false,
+        },
+      },
+      x: {
+        ticks: {
+          display: false,
+        },
+      },
+    },
     animations: {
       tension: {
         duration: 1000,
@@ -328,6 +340,31 @@ export class WorkspaceComponent implements OnInit {
 
   setTrainingConfig(trainingConfig: TrainingConfig): void {
     this.trainingConfig = trainingConfig;
+  }
+
+  displayInteractionModal(
+    $event: DisplayConfigModal,
+    templateRef: TemplateRef<any>
+  ): void {
+    this.lastPerformedUserAction = $event;
+
+    const interactionModalRef = this.matDialog.open(GenericModalComponent, {
+      width: '100%',
+      height: '100%',
+      enterAnimationDuration: 200,
+      exitAnimationDuration: 300,
+      data: {
+        templateRef,
+      },
+    });
+
+    interactionModalRef
+      .afterClosed()
+      .pipe(take(1))
+      .subscribe(() => {
+        this.lastPerformedUserAction = undefined;
+        this.changeDetectorRef.detectChanges();
+      });
   }
 
   private updateChartComponent(): void {
