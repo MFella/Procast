@@ -9,4 +9,8 @@ export class TypeHelper {
       fields.every((field) => field in value)
     );
   }
+
+  // static isNotPartialType<T extends Record<any, any>>(object: Partial<T>): object is T {
+  //   return Object.create()
+  // }
 }

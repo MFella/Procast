@@ -12,28 +12,15 @@ import { BaseChartDirective } from 'ng2-charts';
 import { WorksheetComponent } from '../worksheet/worksheet.component';
 import { MatDialog } from '@angular/material/dialog';
 import { LoadDataComponent } from '../load-data/load-data.component';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import {
-  BasicLayer,
-  HelpLayer,
-  LossFn,
-  Optimizer,
-  GeneralConfigSelectOption,
-  ShowLegend,
-  PreferredExtension,
-  GenericFormGroup,
-  TrainingConfig,
   ChartConfig,
   FileSave,
+  Optimizer,
+  SidebarConfigChangeEvent,
+  TrainingConfig,
 } from '../_typings/workspace/sidebar-config.typings';
 import { LocalStorageService } from '../local-storage.service';
 import { LocalStorageMappings } from '../_typings/local-storage/local-storage.typings';
@@ -43,7 +30,10 @@ import { NgClass } from '@angular/common';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
-import { selectSeriesData } from '../architecture/selectors';
+import {
+  selectSeriesData,
+  selectSidebarConfig,
+} from '../architecture/selectors';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   SudoRedoActionPayload,
@@ -51,29 +41,19 @@ import {
 } from '../_typings/workspace/actions/workspace-actions.typings';
 import { FileInteractionService } from '../_services/file-interaction.service';
 import { Predictor } from '../_helpers/predictor';
-import {
-  basicLayerOptions,
-  chartTypeOptions,
-  helpLayerOptions,
-  lossFnOptions,
-  optimizerOptions,
-  preferredExtensionOptions,
-  showLegendOptions,
-  trainingDefaultConfig,
-} from '../config/sidebar-config';
 import { TypeHelper } from '../_helpers/type-helper';
 import { AlertService } from '../_services/alert.service';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ProgressBarMode } from '@angular/material/progress-bar';
+import { SidebarComponent } from '../sidebar/sidebar.component';
 
 @Component({
   selector: 'app-workspace',
   imports: [
     BaseChartDirective,
     WorksheetComponent,
-    MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
     FormsModule,
@@ -84,6 +64,7 @@ import { ProgressBarMode } from '@angular/material/progress-bar';
     MatTabsModule,
     MatIconModule,
     MatButtonModule,
+    SidebarComponent,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
@@ -106,37 +87,16 @@ export class WorkspaceComponent implements OnInit {
   readonly #destroyRef = inject(DestroyRef);
   private readonly alertService = inject(AlertService);
 
+  private trainingConfig?: TrainingConfig;
+  private fileSaveConfig?: FileSave;
+  chartConfig?: ChartConfig;
+
   worksheetData: Map<string, WorksheetRowData> = new Map<
     string,
     WorksheetRowData
   >();
   isPredictionInProgress = false;
   lastPredictionFailed = false;
-
-  trainingConfigFormGroup = new FormGroup<GenericFormGroup<TrainingConfig>>({
-    basicLayer: new FormControl(trainingDefaultConfig.basicLayer, [
-      Validators.required,
-    ]),
-    helpLayer: new FormControl(trainingDefaultConfig.helpLayer, [
-      Validators.required,
-    ]),
-    lossFn: new FormControl(trainingDefaultConfig.lossFn, [
-      Validators.required,
-    ]),
-    optimizer: new FormControl(trainingDefaultConfig.optimizer, [
-      Validators.required,
-    ]),
-    learningRate: new FormControl(trainingDefaultConfig.learningRate, []),
-  });
-
-  chartConfigFormGroup = new FormGroup<GenericFormGroup<ChartConfig>>({
-    showLegend: new FormControl(false, [Validators.required]),
-    chartType: new FormControl('line', [Validators.required]),
-  });
-
-  fileSaveFormGroup = new FormGroup<GenericFormGroup<FileSave>>({
-    preferredExtension: new FormControl('csv', [Validators.required]),
-  });
 
   isEditingWorksheetName = false;
   worksheetName = 'Untilted';
@@ -149,27 +109,6 @@ export class WorkspaceComponent implements OnInit {
   generatePredictionTooltip = '';
   undoActions: Array<SudoRedoActionPayload> = [];
   redoActions: Array<SudoRedoActionPayload> = [];
-
-  basicLayerOptions: Array<GeneralConfigSelectOption<BasicLayer>> =
-    basicLayerOptions;
-
-  helpLayerOptions: Array<GeneralConfigSelectOption<HelpLayer>> =
-    helpLayerOptions;
-
-  lossFnOptions: Array<GeneralConfigSelectOption<LossFn>> = lossFnOptions;
-
-  optimizerOptions: Array<GeneralConfigSelectOption<Optimizer>> =
-    optimizerOptions;
-
-  chartTypeOptions: Array<GeneralConfigSelectOption<ChartType>> =
-    chartTypeOptions;
-
-  showLegendOptions: Array<GeneralConfigSelectOption<ShowLegend>> =
-    showLegendOptions;
-
-  preferredExtensionOptions: Array<
-    GeneralConfigSelectOption<PreferredExtension>
-  > = preferredExtensionOptions;
 
   private isPredicted = (ctx: any, value: any) => {
     return ctx.p0?.raw?.isPredicted || ctx.p1?.raw?.isPredicted
@@ -217,10 +156,7 @@ export class WorkspaceComponent implements OnInit {
   chartLegend = true;
 
   ngOnInit(): void {
-    this.loadConfigsFromLocalStorage();
-    this.observeTrainingConfigChanged();
-    this.observeChartConfigChanged();
-    this.observeFileSaveConfigChanged();
+    this.observeSidebarConfigChanged();
     this.observeWorksheetData();
     this.generateRandomData();
   }
@@ -257,11 +193,13 @@ export class WorkspaceComponent implements OnInit {
       if (typeof Worker !== 'undefined') {
         generatedPrediction = await this.processMessageToWebWorker('predict');
       } else {
-        generatedPrediction = await Predictor.generatePrediction(
-          this.worksheetData,
-          this.trainingConfigFormGroup.value as TrainingConfig,
-          () => {}
-        );
+        if (this.trainingConfig) {
+          generatedPrediction = await Predictor.generatePrediction(
+            this.worksheetData,
+            this.trainingConfig,
+            () => {}
+          );
+        }
       }
 
       this.applyGeneratedPrediction(generatedPrediction);
@@ -286,12 +224,13 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async savePredictionResults(): Promise<void> {
-    await this.fileInteractionService.tryToWriteFile(
-      this.worksheetData,
-      this.fileSaveFormGroup.value?.preferredExtension ??
-        WorkspaceComponent.FILE_EXTENSION_DEFAULT,
-      this.worksheetName
-    );
+    if (this.fileSaveConfig) {
+      await this.fileInteractionService.tryToWriteFile(
+        this.worksheetData,
+        this.fileSaveConfig.preferredExtension,
+        this.worksheetName
+      );
+    }
   }
 
   generateRandomData(): void {
@@ -379,82 +318,16 @@ export class WorkspaceComponent implements OnInit {
     this.setEditingWorksheetNameState(false);
   }
 
-  private loadConfigsFromLocalStorage(): void {
-    this.trainingConfigFormGroup.setValue({
-      basicLayer: this.localStorageService.getItem('basicLayer') ?? 'GRU',
-      helpLayer: this.localStorageService.getItem('helpLayer') ?? 'Dropout',
-      lossFn: this.localStorageService.getItem('lossFn') ?? 'meanSquaredError',
-      optimizer: this.localStorageService.getItem('optimizer') ?? 'momentum',
-      learningRate: this.localStorageService.getItem('learningRate') ?? 0.001,
-    });
-
-    const showLegendFromLS = this.localStorageService.getItem('showLegend');
-
-    this.chartConfigFormGroup.setValue({
-      chartType: this.localStorageService.getItem('chartType') ?? 'line',
-      showLegend: showLegendFromLS,
-    });
-
-    this.fileSaveFormGroup.setValue({
-      preferredExtension:
-        this.localStorageService.getItem('preferredExtension') ?? 'csv',
-    });
-
-    if (showLegendFromLS != null) {
-      this.chartLegend = showLegendFromLS;
-    }
+  setChartConfig(chartConfig: ChartConfig): void {
+    this.chartConfig = chartConfig;
   }
 
-  private observeTrainingConfigChanged(): void {
-    this.trainingConfigFormGroup.valueChanges
-      .pipe(takeUntilDestroyed(this.#destroyRef))
-      .subscribe((formGroupValue) => {
-        this.saveConfigToLocalStorage(formGroupValue);
-        const learningRateFormControl =
-          this.trainingConfigFormGroup.controls.learningRate;
-
-        if (formGroupValue.optimizer && learningRateFormControl) {
-          const shouldDisableLearningRate =
-            this.excludedOptimizersFromLearningRate.includes(
-              formGroupValue.optimizer
-            ) && learningRateFormControl.disabled !== true;
-
-          shouldDisableLearningRate && learningRateFormControl.disable();
-        }
-      });
+  setFileSaveConfig(fileSaveConfig: FileSave): void {
+    this.fileSaveConfig = fileSaveConfig;
   }
 
-  private observeChartConfigChanged(): void {
-    this.chartConfigFormGroup.valueChanges
-      .pipe(takeUntilDestroyed(this.#destroyRef))
-      .subscribe((formGroupValue) => {
-        this.saveConfigToLocalStorage(formGroupValue);
-        this.chartLegend = formGroupValue.showLegend ?? false;
-      });
-  }
-
-  private observeFileSaveConfigChanged(): void {
-    this.fileSaveFormGroup.valueChanges
-      .pipe(takeUntilDestroyed(this.#destroyRef))
-      .subscribe((formGroupValue) => {
-        this.saveConfigToLocalStorage(formGroupValue);
-      });
-  }
-
-  private saveConfigToLocalStorage<
-    T extends keyof LocalStorageMappings
-  >(formGroupValue: { [Key in T]?: LocalStorageMappings[Key] | null }): void {
-    const formValueMap = new Map<
-      keyof LocalStorageMappings,
-      LocalStorageMappings[keyof LocalStorageMappings]
-    >();
-    Object.entries(formGroupValue).forEach(([key, value]) =>
-      formValueMap.set(
-        key as keyof LocalStorageMappings,
-        value as LocalStorageMappings[keyof LocalStorageMappings]
-      )
-    );
-    this.localStorageService.setItems(formValueMap);
+  setTrainingConfig(trainingConfig: TrainingConfig): void {
+    this.trainingConfig = trainingConfig;
   }
 
   private updateChartComponent(): void {
@@ -535,7 +408,7 @@ export class WorkspaceComponent implements OnInit {
       WorkspaceComponent.PREDICTION_WORKER.postMessage({
         message: workspaceWorkerMessage,
         worksheetData: this.worksheetData,
-        trainingConfig: this.trainingConfigFormGroup.value,
+        trainingConfig: this.trainingConfig,
       });
     });
   }
@@ -557,5 +430,27 @@ export class WorkspaceComponent implements OnInit {
         eventSource: 'predicted',
       })
     );
+  }
+
+  private observeSidebarConfigChanged(): void {
+    this.store
+      .select(selectSidebarConfig)
+      .pipe(takeUntilDestroyed(this.#destroyRef))
+      .subscribe(({ sidebarConfig }) => {
+        if (sidebarConfig.chartConfig) {
+          this.setChartConfig(sidebarConfig.chartConfig);
+          this.chartLegend = sidebarConfig.chartConfig.showLegend;
+        }
+
+        if (sidebarConfig.fileSave) {
+          this.setFileSaveConfig(sidebarConfig.fileSave);
+        }
+
+        if (sidebarConfig.trainingConfig) {
+          this.setTrainingConfig(sidebarConfig.trainingConfig);
+        }
+
+        this.changeDetectorRef.detectChanges();
+      });
   }
 }

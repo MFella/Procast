@@ -61,3 +61,18 @@ export type ChartConfig = {
 export type FileSave = {
   preferredExtension: PreferredExtension;
 };
+
+type SidebarGroupedConfig = {
+  chartConfig: ChartConfig;
+  fileSave: FileSave;
+  trainingConfig: TrainingConfig;
+};
+
+export type SidebarConfig = {
+  [Key in keyof SidebarGroupedConfig]: SidebarGroupedConfig[Key];
+};
+
+export type SidebarConfigChangeEvent<T extends keyof SidebarGroupedConfig> = {
+  configType: T;
+  config: SidebarGroupedConfig[T];
+};

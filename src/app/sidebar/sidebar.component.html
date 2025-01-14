@@ -1,0 +1,355 @@
+<div class="flex h-full flex-col justify-between border-e bg-white relative">
+  <div class="px-4 py-8 absolute w-full h-full">
+    <div
+      class="grid relative w-full h-10 place-content-center rounded-lg bg-gray-100 text-xs text-gray-600"
+    >
+      <div class="absolute w-full inset-x-0 bottom-0 border-b border-gray-100">
+        <a class="w-full flex items-center gap-2 bg-white p-2 hover:bg-gray-50">
+          <div class="p-2 border border-gray-200 rounded-xl">
+            <svg
+              class="size-10 rounded-full object-cover"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+              />
+            </svg>
+          </div>
+
+          <div>
+            <p class="text-xs">
+              <strong class="block font-medium pl-2">Unknown user</strong>
+
+              <span class="flex items-center gap-2">
+                <a
+                  class="py-1 px-2 rounded-full transition-all border border-transparent hover:underline-offset-1 hover:shadow-sm hover:border-slate-200"
+                  href="#"
+                  >Sign In</a
+                >
+                <!-- <span class="text-slate-300">|</span>
+                    <a
+                      class="py-1 px-2 rounded-full transition-all border border-transparent hover:border-slate-200"
+                      href="#"
+                      >Log In</a
+                    > -->
+              </span>
+            </p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <ul class="mt-4 space-y-1 relative z-[3] h-12">
+      <li>
+        <details
+          #trainingConfigDetailsRef
+          class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-[1] shadow-sm"
+        >
+          <summary
+            class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <span class="text-sm font-medium flex justify-center items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+              </svg>
+              <span class="pl-2">Training config</span>
+            </span>
+
+            <span
+              class="shrink-0 transition duration-300 group-open:-rotate-180"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </summary>
+
+          <form [formGroup]="trainingConfigFormGroup">
+            <ul
+              #trainingConfigListRef
+              class="training-config mt-2 space-y-1 px-4 transition-all"
+            >
+              <li class="flex flex-col w-full justify-between">
+                <label
+                  for=""
+                  class="min-w-20 truncate mr-4 font-medium text-xs"
+                >
+                  Basic Layer</label
+                >
+                <mat-form-field class="w-full">
+                  <mat-label>Basic Layer</mat-label>
+                  <mat-select [formControlName]="'basicLayer'">
+                    @for (basicLayerOption of basicLayerOptions; track
+                    basicLayerOption) {
+                    <mat-option [value]="basicLayerOption.value">{{
+                      basicLayerOption.viewValue
+                    }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </li>
+              <li class="flex flex-col w-full justify-between">
+                <label
+                  for=""
+                  class="min-w-20 truncate mr-4 font-medium text-xs"
+                >
+                  Help Layer</label
+                >
+                <mat-form-field class="w-full">
+                  <mat-label>Help Layer</mat-label>
+                  <mat-select [formControlName]="'helpLayer'">
+                    @for (helpLayerOption of helpLayerOptions; track
+                    helpLayerOption) {
+                    <mat-option [value]="helpLayerOption.value">{{
+                      helpLayerOption.viewValue
+                    }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </li>
+              <li class="flex flex-col w-full justify-between">
+                <label
+                  for=""
+                  class="min-w-20 truncate mr-4 font-medium text-xs pb-1"
+                >
+                  Loss Function</label
+                >
+                <mat-form-field class="w-full">
+                  <mat-label>Loss Function</mat-label>
+                  <mat-select [formControlName]="'lossFn'">
+                    @for (lossFnOption of lossFnOptions; track lossFnOption) {
+                    <mat-option [value]="lossFnOption.value">{{
+                      lossFnOption.viewValue
+                    }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </li>
+              <li class="grid grid-cols-3 grid-rows-1">
+                <div class="col-span-2 flex flex-col w-full justify-between">
+                  <label
+                    for=""
+                    class="min-w-20 truncate mr-4 font-medium text-xs"
+                  >
+                    Optimizer</label
+                  >
+                  <mat-form-field class="w-full">
+                    <mat-select [formControlName]="'optimizer'">
+                      @for (optimizerOption of optimizerOptions; track
+                      optimizerOption) {
+                      <mat-option [value]="optimizerOption.value">{{
+                        optimizerOption.viewValue
+                      }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div class="flex flex-col w-full justify-between pl-3">
+                  <label
+                    for=""
+                    class="min-w-20 truncate mr-4 font-medium text-xs"
+                  >
+                    Learning Rate</label
+                  >
+                  <mat-form-field class="w-full">
+                    <input
+                      [formControlName]="'learningRate'"
+                      matInput
+                      placeholder="E.g. 0.005"
+                      value="0.001"
+                      step="0.001"
+                      type="number"
+                      min="0.001"
+                      max="30"
+                    />
+                  </mat-form-field>
+                </div>
+              </li>
+            </ul>
+          </form>
+        </details>
+      </li>
+    </ul>
+    <ul class="space-y-1 relative z-[2] h-12 mt-2">
+      <li>
+        <details
+          #chartConfigDetailsRef
+          class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-10 shadow-sm"
+        >
+          <summary
+            class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <span class="text-sm font-medium flex justify-center items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605"
+                />
+              </svg>
+
+              <span class="pl-2">Chart config</span>
+            </span>
+
+            <span
+              class="shrink-0 transition duration-300 group-open:-rotate-180"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </summary>
+
+          <form [formGroup]="chartConfigFormGroup">
+            <ul class="chart-config mt-2 space-y-1 px-4">
+              <li class="flex flex-col w-full justify-between">
+                <label
+                  for=""
+                  class="min-w-20 truncate mr-4 font-medium text-xs"
+                >
+                  Chart Type</label
+                >
+                <mat-form-field class="w-full">
+                  <mat-select [formControlName]="'chartType'">
+                    @for (chartTypeOption of chartTypeOptions; track
+                    chartTypeOption) {
+                    <mat-option [value]="chartTypeOption.value">{{
+                      chartTypeOption.viewValue
+                    }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </li>
+              <li class="flex flex-col w-full justify-between">
+                <div class="py-2">
+                  <mat-checkbox formControlName="showLegend" class=""
+                    >Show legend</mat-checkbox
+                  >
+                </div>
+              </li>
+            </ul>
+          </form>
+        </details>
+      </li>
+    </ul>
+    <ul class="space-y-1 relative z-[1] h-12 mt-2">
+      <li>
+        <details
+          #chartConfigDetailsRef
+          class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-[1] shadow-sm"
+        >
+          <summary
+            class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <span class="text-sm font-medium flex justify-center items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
+                />
+              </svg>
+
+              <span class="pl-2">File save config</span>
+            </span>
+
+            <span
+              class="shrink-0 transition duration-300 group-open:-rotate-180"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+          </summary>
+
+          <form [formGroup]="fileSaveFormGroup">
+            <ul class="file-save-config mt-2 space-y-1 px-4">
+              <li class="flex flex-col w-full justify-between">
+                <label
+                  for=""
+                  class="min-w-20 truncate mr-4 font-medium text-xs"
+                >
+                  Preferred extension</label
+                >
+                <mat-form-field class="w-full">
+                  <mat-select [formControlName]="'preferredExtension'">
+                    @for (preferredExtensionOption of preferredExtensionOptions;
+                    track preferredExtensionOption) {
+                    <mat-option [value]="preferredExtensionOption.value">{{
+                      preferredExtensionOption.viewValue
+                    }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </li>
+            </ul>
+          </form>
+        </details>
+      </li>
+    </ul>
+  </div>
+</div>
