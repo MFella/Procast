@@ -24,7 +24,7 @@ import {
 } from '../_typings/workspace/sidebar-config.typings';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { NgClass } from '@angular/common';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { WorksheetRowData } from '../_typings/worksheet.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
@@ -66,6 +66,7 @@ import { GenericModalComponent } from '../generic-modal/generic-modal.component'
     MatIconModule,
     MatButtonModule,
     SidebarComponent,
+    NgTemplateOutlet,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
