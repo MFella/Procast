@@ -3,6 +3,8 @@ import {
   ChangeDetectorRef,
   Component,
   DestroyRef,
+  ElementRef,
+  Inject,
   inject,
   OnInit,
   TemplateRef,
@@ -24,8 +26,14 @@ import {
 } from '../_typings/workspace/sidebar-config.typings';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { NgClass, NgTemplateOutlet } from '@angular/common';
-import { WorksheetRowData } from '../_typings/worksheet.typings';
+import {
+  AsyncPipe,
+  DOCUMENT,
+  NgClass,
+  NgIf,
+  NgTemplateOutlet,
+} from '@angular/common';
+import { WorksheetRowData } from '../_typings/worksheet/worksheet.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
 import {
@@ -45,10 +53,16 @@ import { AlertService } from '../_services/alert.service';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { ProgressBarMode } from '@angular/material/progress-bar';
+import {
+  MatProgressBarModule,
+  ProgressBarMode,
+} from '@angular/material/progress-bar';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { take } from 'rxjs';
+import { map, Observable, take } from 'rxjs';
 import { GenericModalComponent } from '../generic-modal/generic-modal.component';
+import { ActionButtonConfig } from '../_typings/action-buttons/action-buttons.typings';
+import { ActionButtonComponent } from '../action-button/action-button.component';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-workspace',
@@ -67,6 +81,10 @@ import { GenericModalComponent } from '../generic-modal/generic-modal.component'
     MatButtonModule,
     SidebarComponent,
     NgTemplateOutlet,
+    ActionButtonComponent,
+    MatProgressBarModule,
+    NgIf,
+    AsyncPipe,
   ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
@@ -75,10 +93,11 @@ import { GenericModalComponent } from '../generic-modal/generic-modal.component'
 export class WorkspaceComponent implements OnInit {
   private chartComponent = viewChild.required(BaseChartDirective);
   private worksheetNameInput = viewChild.required('worksheetNameInput');
-  private static PREDICTION_WORKER: Worker;
 
+  private static PREDICTION_WORKER: Worker;
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
   private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
+  private static readonly CHART_AXES_HIDE_THRESHOLD_PX = 500;
 
   private readonly matDialog = inject(MatDialog);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
@@ -89,6 +108,10 @@ export class WorkspaceComponent implements OnInit {
 
   private trainingConfig?: TrainingConfig;
   private fileSaveConfig?: FileSave;
+
+  isMobile$: Observable<boolean> = inject(BreakpointObserver)
+    .observe([Breakpoints.XSmall])
+    .pipe(map((breakpointState) => !breakpointState.matches));
   chartConfig?: ChartConfig;
 
   worksheetData: Map<string, WorksheetRowData> = new Map<
@@ -110,6 +133,9 @@ export class WorkspaceComponent implements OnInit {
   undoActions: Array<SudoRedoActionPayload> = [];
   redoActions: Array<SudoRedoActionPayload> = [];
   lastPerformedUserAction?: DisplayConfigModal;
+  resizeObserver: ResizeObserver = new ResizeObserver(
+    this.onResizeObserverCb.bind(this)
+  );
 
   private isPredicted = (ctx: any, value: any) => {
     return ctx.p0?.raw?.isPredicted || ctx.p1?.raw?.isPredicted
@@ -146,12 +172,12 @@ export class WorkspaceComponent implements OnInit {
     scales: {
       y: {
         ticks: {
-          display: false,
+          display: true,
         },
       },
       x: {
         ticks: {
-          display: false,
+          display: true,
         },
       },
     },
@@ -167,6 +193,52 @@ export class WorkspaceComponent implements OnInit {
   };
 
   chartLegend = true;
+
+  actionButtonConfigList: Array<ActionButtonConfig> = [
+    {
+      label: 'Generate',
+      iconName: 'play',
+      clickCallback: this.generatePrediction.bind(this),
+      resolveLinkDisabled: () =>
+        !this.canStartPrediction || this.isPredictionInProgress,
+    },
+    {
+      label: 'Load',
+      iconName: 'import',
+      clickCallback: this.openLoadDataModal.bind(this),
+      resolveLinkDisabled: () => this.isPredictionInProgress,
+    },
+    {
+      label: 'Random',
+      iconName: 'blitz',
+      clickCallback: this.generateRandomData.bind(this),
+      resolveLinkDisabled: () => this.isPredictionInProgress,
+    },
+    {
+      label: 'Save',
+      iconName: 'export',
+      clickCallback: this.savePredictionResults.bind(this),
+      resolveLinkDisabled: () => this.isPredictionInProgress,
+    },
+    {
+      label: 'Redo',
+      iconName: 'redo',
+      clickCallback: this.performRedo.bind(this),
+      resolveLinkDisabled: () =>
+        !this.redoActions.length || this.isPredictionInProgress,
+    },
+    {
+      label: 'Undo',
+      iconName: 'undo',
+      clickCallback: this.performUndo.bind(this),
+      resolveLinkDisabled: () =>
+        !this.undoActions.length || this.isPredictionInProgress,
+    },
+  ];
+
+  constructor(@Inject(DOCUMENT) readonly document: Document) {
+    this.resizeObserver.observe(document.body);
+  }
 
   ngOnInit(): void {
     this.observeSidebarConfigChanged();
@@ -490,5 +562,42 @@ export class WorkspaceComponent implements OnInit {
 
         this.changeDetectorRef.detectChanges();
       });
+  }
+
+  private onResizeObserverCb(entries: Array<ResizeObserverEntry>): void {
+    const firstEntry = entries[0];
+    if (!firstEntry) {
+      return;
+    }
+
+    const { width: bodyWidth } = firstEntry.contentRect;
+
+    const shouldAxesBeVisible =
+      bodyWidth > WorkspaceComponent.CHART_AXES_HIDE_THRESHOLD_PX;
+    if (
+      this.chartOptions.scales?.['x']?.['ticks']?.['display'] !==
+        shouldAxesBeVisible &&
+      this.chartOptions.scales?.['y']?.['ticks']?.['display'] !==
+        shouldAxesBeVisible
+    ) {
+      const chartOptionsClone = structuredClone(this.chartOptions);
+      this.chartOptions = {
+        ...chartOptionsClone,
+        scales: {
+          x: {
+            ticks: {
+              display: shouldAxesBeVisible,
+            },
+          },
+          y: {
+            ticks: {
+              display: shouldAxesBeVisible,
+            },
+          },
+        },
+      };
+      this.chartComponent().update();
+      this.changeDetectorRef.detectChanges();
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { read, utils, writeFile } from 'xlsx';
-import { WorksheetRowData } from '../_typings/worksheet.typings';
+import { WorksheetRowData } from '../_typings/worksheet/worksheet.typings';
 import { PreferredExtension } from '../_typings/workspace/sidebar-config.typings';
 
 @Injectable({

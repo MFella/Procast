@@ -16,7 +16,6 @@ import {
   Optimizer,
   PreferredExtension,
   ShowLegend,
-  SidebarConfigChangeEvent,
   TrainingConfig,
 } from '../_typings/workspace/sidebar-config.typings';
 import {
@@ -59,13 +58,6 @@ import { MatDialogModule } from '@angular/material/dialog';
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent implements OnInit {
-  readonly chartConfigChanged$ =
-    output<SidebarConfigChangeEvent<'chartConfig'>>();
-  readonly trainingConfigChanged$ =
-    output<SidebarConfigChangeEvent<'trainingConfig'>>();
-  readonly fileSaveConfigChanged$ =
-    output<SidebarConfigChangeEvent<'fileSave'>>();
-
   private readonly store = inject(Store);
   readonly #destroyRef = inject(DestroyRef);
 

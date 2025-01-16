@@ -10,7 +10,7 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { FileInteractionService } from './file-interaction.service';
-import { WorksheetRowData } from '../_typings/worksheet.typings';
+import { WorksheetRowData } from '../_typings/worksheet/worksheet.typings';
 
 @Injectable({
   providedIn: 'root',

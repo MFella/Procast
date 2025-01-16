@@ -14,7 +14,7 @@ import {
 import {
   WorksheetColDef,
   WorksheetRowData,
-} from '../_typings/worksheet.typings';
+} from '../_typings/worksheet/worksheet.typings';
 import { Store } from '@ngrx/store';
 import { seriesDataActions } from '../architecture/actions/series-data.actions';
 import { AsyncPipe, NgClass, NgIf } from '@angular/common';
@@ -50,8 +50,8 @@ export class WorksheetComponent implements OnInit {
 
   store: Store = inject(Store);
   isMobile$: Observable<boolean> = inject(BreakpointObserver)
-    .observe([Breakpoints.Small])
-    .pipe(map((breakpointState) => breakpointState.matches));
+    .observe([Breakpoints.XSmall])
+    .pipe(map((breakpointState) => !breakpointState.matches));
 
   monthsInYear = Array.from({ length: 12 }, (_, i) => {
     return new Date(0, i).toLocaleString('en-US', { month: 'long' });

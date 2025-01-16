@@ -71,8 +71,3 @@ type SidebarGroupedConfig = {
 export type SidebarConfig = {
   [Key in keyof SidebarGroupedConfig]: SidebarGroupedConfig[Key];
 };
-
-export type SidebarConfigChangeEvent<T extends keyof SidebarGroupedConfig> = {
-  configType: T;
-  config: SidebarGroupedConfig[T];
-};

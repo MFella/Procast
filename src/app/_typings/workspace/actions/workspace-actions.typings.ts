@@ -1,4 +1,4 @@
-import { WorksheetRowData } from '../../worksheet.typings';
+import { WorksheetRowData } from '../../worksheet/worksheet.typings';
 
 export type SudoRedoActionPayload = {
   value: {

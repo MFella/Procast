@@ -1,5 +1,5 @@
 import { createFeatureSelector } from '@ngrx/store';
-import { WorksheetRowData } from '../../_typings/worksheet.typings';
+import { WorksheetRowData } from '../../_typings/worksheet/worksheet.typings';
 import { WorksheetUpdateEventSource } from '../../_typings/workspace/actions/workspace-actions.typings';
 import { SidebarConfig } from '../../_typings/workspace/sidebar-config.typings';
 

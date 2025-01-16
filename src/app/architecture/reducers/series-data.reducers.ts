@@ -1,7 +1,7 @@
 import { createReducer, on } from '@ngrx/store';
 import { seriesDataActions } from '../actions/series-data.actions';
 import { SeriesDataState } from '../selectors';
-import { WorksheetRowData } from '../../_typings/worksheet.typings';
+import { WorksheetRowData } from '../../_typings/worksheet/worksheet.typings';
 
 export const initialState: SeriesDataState = {
   seriesData: new Map<string, WorksheetRowData>(),

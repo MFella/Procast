@@ -1,4 +1,4 @@
-import { WorksheetRowData } from '../_typings/worksheet.typings';
+import { WorksheetRowData } from '../_typings/worksheet/worksheet.typings';
 import {
   BasicLayer,
   HelpLayer,

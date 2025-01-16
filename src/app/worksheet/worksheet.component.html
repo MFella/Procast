@@ -1,21 +1,23 @@
-<mat-progress-bar
-  *ngIf="isMobile$ | async"
-  class="!scale-[.95] !absolute z-10 top-0 left-0 rounded-xl"
-  [mode]="progressBarMode"
-  [value]="computationProgressValue"
-  [ngClass]="{
-    finished: computationProgressValue === 100 && !lastPredictionFailed,
-    preparing: progressBarMode === 'query',
-    failed: lastPredictionFailed
-  }"
-/>
-<ag-grid-angular
-  class="ag-theme-quartz h-full w-full"
-  [ngClass]="{
-    'grid-disabled': isPredictionInProgress
-  }"
-  [rowData]="convertedWorksheetData"
-  [columnDefs]="colDefs"
-  [gridOptions]="gridOptions"
-  (gridReady)="onGridReady($event)"
-/>
+<div class="w-full h-full overflow-hidden">
+  <mat-progress-bar
+    *ngIf="isMobile$ | async"
+    class="z-10 !translate-y-[3.1rem] top-0 left-0 rounded-xl"
+    [mode]="progressBarMode"
+    [value]="computationProgressValue"
+    [ngClass]="{
+      finished: computationProgressValue === 100 && !lastPredictionFailed,
+      preparing: progressBarMode === 'query',
+      failed: lastPredictionFailed
+    }"
+  />
+  <ag-grid-angular
+    class="ag-theme-quartz h-full w-full"
+    [ngClass]="{
+      'grid-disabled': isPredictionInProgress
+    }"
+    [rowData]="convertedWorksheetData"
+    [columnDefs]="colDefs"
+    [gridOptions]="gridOptions"
+    (gridReady)="onGridReady($event)"
+  />
+</div>
