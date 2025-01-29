@@ -1,0 +1,219 @@
+<div class="grid grid-cols-4 grid-rows-6 gap-4 max-h-screen">
+  <div
+    class="chart__container col-span-4 row-span-6 sm:col-span-3 sm:row-span-4 sm:m-2 p-4 border-none sm:border border-slate-200 rounded-xl relative max-h-[80vh] sm:h-full w-screen sm:w-full m-0"
+    [ngClass]="{
+      'prediction-not-started':
+        isPredictionInProgress && computationProgressBarMode === 'query',
+      'prediction-not-generated':
+        isPredictionInProgress && computationProgressBarMode === 'determinate'
+    }"
+  >
+    @if (chartConfig) {
+    <canvas
+      #chart
+      baseChart
+      [type]="chartConfig.chartType"
+      [data]="chartData"
+      [options]="chartOptions"
+      [legend]="chartLegend"
+    >
+    </canvas>
+    }
+  </div>
+  <div class="row-span-4 col-start-4 row-start-1 hidden sm:block">
+    <ng-template #sidebarTemplateRef>
+      <app-sidebar />
+    </ng-template>
+    <ng-container *ngTemplateOutlet="sidebarTemplateRef"></ng-container>
+  </div>
+
+  <div class="col-span-3 row-span-2 col-start-1 row-start-5 hidden sm:block">
+    <mat-tab-group
+      class="px-4 h-full sm:pb-4"
+      mat-stretch-tabs="false"
+      mat-align-tabs="start"
+    >
+      <mat-tab>
+        <ng-template mat-tab-label>
+          @if (isEditingWorksheetName) {
+          <div class="flex gap-2 justify-center items-center">
+            <mat-form-field class="w-32">
+              <input
+                #worksheetNameInput
+                matInput
+                [value]="worksheetName"
+                (keydown.enter)="submitWorksheetTitle(worksheetNameInput.value)"
+              />
+              @if (worksheetName) {
+              <button
+                matSuffix
+                mat-icon-button
+                aria-label="Close"
+                class="scale-[.75]"
+                (click)="setEditingWorksheetNameState(false)"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+              }
+            </mat-form-field>
+            <button
+              mat-mini-fab
+              aria-label="Submit edit sheet title"
+              class="scale-[.6]"
+              (click)="submitWorksheetTitle(worksheetNameInput.value)"
+            >
+              <mat-icon>check</mat-icon>
+            </button>
+          </div>
+
+          } @else {
+          <span class="text-base max-w-20 truncate">{{ worksheetName }}</span>
+          <button
+            mat-mini-fab
+            aria-label="Edit sheet title button"
+            class="scale-[.6] transition-all opacity-35 hover:opacity-100"
+            (click)="setEditingWorksheetNameState()"
+          >
+            <mat-icon>mode_edit</mat-icon>
+          </button>
+          }
+        </ng-template>
+
+        <ng-template #worksheetDataTemplateRef>
+          <app-worksheet
+            [worksheetData]="worksheetData"
+            [isPredictionInProgress]="isPredictionInProgress"
+            [computationProgressValue]="computationProgressValue"
+            [progressBarMode]="computationProgressBarMode"
+            [lastPredictionFailed]="lastPredictionFailed"
+            class="block overflow-hidden w-full"
+          />
+        </ng-template>
+        <ng-container
+          *ngTemplateOutlet="worksheetDataTemplateRef"
+        ></ng-container>
+      </mat-tab>
+      <mat-tab (click)="$event.preventDefault()">
+        <ng-template mat-tab-label>
+          <button
+            mat-fab
+            extended
+            class="!h-8 !pointer-events-none"
+            (click)="addNewSheet($event)"
+          >
+            <span>New Sheet</span>
+            <mat-icon>add</mat-icon>
+          </button>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+  <div class="row-span-2 col-start-4 row-start-5 hidden sm:block">
+    <ng-template #actionsTemplateRef>
+      <div
+        class="flex justify-around sm:grid sm:grid-cols-2 sm:grid-rows-3 gap-2 w-full h-full items-center sm:justify-center sm:px-8 sm:py-4 py-2"
+      >
+        @for (config of actionButtonConfigList; track $index) {
+        <app-action-button class="h-full" [config]="config" />
+        }
+      </div>
+    </ng-template>
+    <ng-container *ngTemplateOutlet="actionsTemplateRef"></ng-container>
+  </div>
+
+  <div
+    class="sm:hidden flex flex-col absolute bottom-0 right-0 w-full h-16 border border-slate-200 rounded-t-3xl shadow-lg bg-transparent backdrop-blur-sm"
+  >
+    <mat-progress-bar
+      *ngIf="isMobile$ | async"
+      class="!absolute z-10 -top-[.1rem] left-0 rounded-xl"
+      [mode]="computationProgressBarMode"
+      [value]="computationProgressValue"
+      [ngClass]="{
+        finished: computationProgressValue === 100 && !lastPredictionFailed,
+        preparing: computationProgressBarMode === 'query',
+        failed: lastPredictionFailed
+      }"
+    />
+    <div
+      class="w-full h-12 flex items-center justify-around bottom-16 absolute border-t border-t-slate-200 rounded-t-xl backdrop-blur-md bg-white bg-opacity-75"
+    >
+      <ng-container *ngTemplateOutlet="actionsTemplateRef"></ng-container>
+    </div>
+    <div class="w-full h-full flex items-center justify-around">
+      <span
+        class="text-center flex flex-col h-full justify-center items-center gap-1 text-gray-600 transition-all text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'config'
+        }"
+        (click)="displayInteractionModal('config', sidebarTemplateRef)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+          />
+        </svg>
+        <span class="">Config</span>
+      </span>
+      <span
+        class="text-center flex flex-col h-full justify-center items-center gap-1 text-gray-600 text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'data'
+        }"
+        (click)="displayInteractionModal('data', worksheetDataTemplateRef)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"
+          />
+        </svg>
+        <span>Data</span>
+      </span>
+      <span
+        class="text-center flex flex-col items-center h-full justify-center gap-1 text-gray-600 text-xs"
+        [ngClass]="{
+          'text-indigo-500': lastPerformedUserAction === 'user'
+        }"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+          />
+        </svg>
+        <span>User</span>
+      </span>
+    </div>
+  </div>
+</div>

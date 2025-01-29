@@ -1,0 +1,32 @@
+:host {
+  @apply block h-screen w-full overflow-hidden;
+}
+
+section.start-container {
+  @apply relative w-full h-full;
+  &::before {
+    @apply absolute w-full h-full top-0 left-0 bg-cover bg-center bg-no-repeat;
+    content: '';
+    background: linear-gradient(rgba(255, 255, 255, 0), rgba(93, 202, 242, 0.8)),
+      url('https://i.pinimg.com/originals/7c/a0/a3/7ca0a34f0465a0a2c0e2aac58ad17645.jpg');
+    background-position: bottom right, left, right;
+  }
+}
+
+.main-tile {
+  @apply p-20 absolute m-4;
+  background-color: rgba(255, 255, 255, 0.2);
+
+  &__heading {
+    animation: fadeIn 1s;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

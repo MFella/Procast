@@ -1,108 +1,82 @@
-# 📈 Procast
+# Procast
 
-Would you like to estimate the future based on current data? The main purpose of this application is to forecast for a specific time serie. Have a [try](https://procast-ochre.vercel.app/)!
+<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-## ✨ Main features
+✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
 
-Main functionalities of an app:
+[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
 
-<ol>
-<li><b>Config panel</b> - the following things can be configured
-<ul style="list-style-type: square;">
-<li><b>Training configuration</b> - user can chose or manipulate of several training options (bolded ones are default values):
-    <ul>
-        <li><i>Basic layer</i> - <b>LSTM</b>, GRU, SimpleRNN</li>
-        <li><i>Help layer</i> - <b>Dropout</b>, BatchNormalization</li>
-        <li><i>Loss Function</i> - <b>huberLoss</b>, meanSquaredError, absoluteDifference, computeWeightedLoss, hingeLoss, logLoss, sigmoidCrossEntropy, softmaxCrossEntropy</li>
-        <li><i>Optimizer</i> - <b>rmsprop</b>, sgd, adam, adagrad, adadelta, momentum</li>
-        <li><i>Learning Rate</i> - range from 0.001 to 30 (default: <b>20</b></li>
-    </ul>
-</li>
-<li><b>Chart configuration</b>
-    <ul>
-    <li><i>Chart type</i> - <b>line</b>, bar, scatter</li>
-    <li><i>Show Legend</i> - <b>No</b>/Yes</li>
-    </ul>
-</li>
-<li><b>Chart configuration</b>
-    <ul>
-        <li><i>Chart type</i> - <b>line</b>, bar, scatter</li>
-        <li><i>Show Legend</i> - <b>No</b>/Yes</li>
-    </ul>
-</li>
-<li><b>File save config</b> - associated with "export to file" func
-    <ul>
-        <li><i>Preferred extension</i> - <b>csv</b>, xlsx</li>
-    </ul>
-</li>
-</ul>
-Every config property is stored in local storage
-</li>
-<li>
-    Action panel
-    <ul style="list-style-type: square;">
-        <li><b>Generate prediction</b> - actually, this is the place when the fun begins. This one will trigger 'prediction' cycle which consider:
-        <ul style="list-style-type: lower-alpha">
-            <li>Adding basic, help, output layers</li>
-            <li>Prepare model for training</li>
-            <li>Create prediction sequences</li>
-            <li>Generation of output predictions</li>
-        </ul>
-        </li>
-        <li><b>Random</b> - it will randomize input data</li>
-        <li><b>Load data</b> - data to predict can be loaded from csv/xlsx files</li>
-        <li><b>Save data</b> - export generated sheet/data to file. Supported extensions: csv/xlsx</li>
-        <li><b>Undo/redo</b> - revert/"un-revert" change of data set. Maximum threshold ("cache number") of this action is <b>20</b></li>
-    </ul>
-</li>
-<li>
-Worksheet - table which displays current sheet and data in form of table 
-<ul style="list-style-type: square;">
-    <li><b>Edit</b> current sheet name - this name will be used in exported file</li>
-    <li><b>Edit</b> current loaded data</li>
-</ul>
-</li>
-</ol>
+## Finish your CI setup
 
-> [!NOTE]  
-> Some of values used in prediction process are hardcoded, eg. epochSize (100), batchSize (1), outputLength (2). These will be customizable in the future.
+[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/3Cs9dmNJfO)
 
-> [!IMPORTANT]  
-> In order to load data, sheet needs to have two cells named 'label' and 'value'. 'value' cells are in restricted format - only 'numbers' are allowed
 
-## ⚒ Architecture
+## Run tasks
 
-<img style="width: 100%" src="https://raw.githubusercontent.com/MFella/procast/refs/heads/master/public/overall-architecture.svg" />
-<br>
-From above diagram, we can see that application is making usage of web worker. Tensorflow computations seems to be really heavy (create, compile and training of model), and it might impact on user experience. That's why web worker is responsible for making such actions.
-<br>
-<b>Notes:</b>
+To run the dev server for your app, use:
 
-1. Predict action is triggered by main thread, and sent to web worker (in order to make computations);
-2. Web worker can send actions to main thread:
+```sh
+npx nx serve procast
+```
 
-- **success** - when computation finished, and next predicted data (outputLength) are delivered
-- **progress** - when the next every tenth epoch was done (user can see progress on UI screen)
-- **fail** - when something went wrong with computations (eg wrong data).
+To create a production bundle:
 
-## 🌠 Next features
+```sh
+npx nx build procast
+```
 
-<ol>
-<li>Make log-in functionality (make usage of generic-auth component)</li>
-<li>Save prediction result to AWS S3 storage (for logged users)</li>
-<li>Implement multiple figures functionality (multiple sheets)</li>
-</ol>
+To see all available targets to run for a project, run:
 
-## 💻 Tech Stack
+```sh
+npx nx show project procast
+```
 
-|    Technology    |   Version    |
-| :--------------: | :----------: |
-|     Angular      |   ^19.0.0    |
-| Angular Material |   ^19.0.2    |
-|     Tailwind     |   ^3.4.16    |
-|       RxJS       |    ~7.8.0    |
-|       NgRx       | ^19.0.0-rc.0 |
-|  Tensorflow.js   |   ^4.22.0    |
-|     Chart.js     |    ^4.3.0    |
-|     Ag Grid      |   ^32.3.3    |
-|     SheetJS      |   ^0.18.5    |
+These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+
+[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+## Add new projects
+
+While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+
+Use the plugin's generator to create new projects.
+
+To generate a new application, use:
+
+```sh
+npx nx g @nx/angular:app demo
+```
+
+To generate a new library, use:
+
+```sh
+npx nx g @nx/angular:lib mylib
+```
+
+You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+
+[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+
+[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+## Install Nx Console
+
+Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+
+[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+## Useful links
+
+Learn more:
+
+- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
+- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+And join the Nx community:
+- [Discord](https://go.nx.dev/community)
+- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
+- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
+- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
