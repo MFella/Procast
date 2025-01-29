@@ -1,0 +1,34 @@
+@use '@angular/material' as mat;
+/* Core Data Grid CSS */
+@import 'ag-grid-community/styles/ag-grid.css';
+/* Quartz Theme Specific CSS */
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$blue-palette,
+        tertiary: mat.$magenta-palette,
+        theme-type: light,
+      ),
+      typography: Roboto,
+      density: -5,
+    )
+  );
+}
+
+* {
+  @apply font-mono;
+}
+
+body {
+  @apply w-full m-0;
+}
+
+.cdk-global-overlay-wrapper {
+  justify-content: center !important;
+}

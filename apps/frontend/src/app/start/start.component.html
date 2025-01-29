@@ -1,0 +1,39 @@
+<section class="start-container relative">
+  <div
+    class="relative mx-auto max-w-screen-xl px-4 py-32 sm:px-6 lg:flex lg:h-screen lg:items-center lg:px-8 flex justify-center items-center"
+  >
+    <div
+      class="main-tile z-[1] max-w-2xl text-center ltr:sm:text-left rtl:sm:text-right rounded-lg backdrop-blur-sm"
+    >
+      <h1
+        class="main-tile__heading text-3xl font-extrabold text-white sm:text-5xl drop-shadow"
+      >
+        Did you wonder how
+
+        <strong class="block font-extrabold text-indigo-300">
+          the future might look like?
+        </strong>
+      </h1>
+
+      <p class="mt-4 max-w-xl text-white sm:text-xl/relaxed flex flex-col">
+        <span>With procast, you can easily predict it based on past data.</span>
+        <span>Give it a try!</span>
+      </p>
+
+      <div class="mt-8 flex flex-wrap gap-4 text-center justify-center">
+        <a
+          [routerLink]="['workspace']"
+          class="inline-block rounded border border-white bg-white px-12 py-3 text-sm font-medium text-blue-500 transition hover:bg-transparent hover:text-white focus:outline-none focus:ring focus:ring-yellow-400"
+        >
+          🧪 Create analysis
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<ngx-particles
+  [id]="'start-particles'"
+  [options]="particlesConfig"
+  (particlesLoaded)="particlesLoaded($event)"
+></ngx-particles>
