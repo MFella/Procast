@@ -45,10 +45,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   DisplayConfigModal,
   SudoRedoActionPayload,
-  WorkspaceWorkerMessage,
 } from '../_typings/workspace/actions/workspace-actions.typings';
 import { FileInteractionService } from '../_services/file-interaction.service';
-import { Predictor } from '../_helpers/predictor';
 import { TypeHelper } from '../_helpers/type-helper';
 import { AlertService } from '../_services/alert.service';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -59,11 +57,12 @@ import {
   ProgressBarMode,
 } from '@angular/material/progress-bar';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { map, Observable, take } from 'rxjs';
+import { firstValueFrom, map, Observable, take } from 'rxjs';
 import { GenericModalComponent } from '../generic-modal/generic-modal.component';
 import { ActionButtonConfig } from '../_typings/action-buttons/action-buttons.typings';
 import { ActionButtonComponent } from '../action-button/action-button.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { PredictionService } from '../_services/prediction.service';
 
 @Component({
   selector: 'app-workspace',
@@ -95,7 +94,6 @@ export class WorkspaceComponent implements OnInit {
   private chartComponent = viewChild.required(BaseChartDirective);
   private worksheetNameInput = viewChild.required('worksheetNameInput');
 
-  private static PREDICTION_WORKER: Worker;
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
   private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
   private static readonly CHART_AXES_HIDE_THRESHOLD_PX = 500;
@@ -106,6 +104,7 @@ export class WorkspaceComponent implements OnInit {
   private readonly fileInteractionService = inject(FileInteractionService);
   readonly #destroyRef = inject(DestroyRef);
   private readonly alertService = inject(AlertService);
+  private readonly predictionService = inject(PredictionService);
 
   private trainingConfig?: TrainingConfig;
   private fileSaveConfig?: FileSave;
@@ -276,17 +275,16 @@ export class WorkspaceComponent implements OnInit {
       this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
       let generatedPrediction: Array<number> = [];
-      if (typeof Worker !== 'undefined') {
-        generatedPrediction = await this.processMessageToWebWorker('predict');
-      } else {
-        if (this.trainingConfig) {
-          generatedPrediction = await Predictor.generatePrediction(
-            this.worksheetData,
-            this.trainingConfig,
-            () => {}
-          );
-        }
-      }
+      const data = Array.from(this.worksheetData.values()).map(
+        (entry) => entry.value
+      );
+      const predictionResult = await firstValueFrom(
+        this.predictionService.startPrediction(data, this.trainingConfig!)
+      );
+
+      this.computationProgressValue = 100;
+      this.lastPredictionFailed = false;
+      generatedPrediction = predictionResult.result;
 
       this.applyGeneratedPrediction(generatedPrediction);
       this.isPredictionInProgress = false;
@@ -303,10 +301,6 @@ export class WorkspaceComponent implements OnInit {
     }
 
     this.changeDetectorRef.detectChanges();
-  }
-
-  async startQuickPrediction(): Promise<void> {
-    await this.generatePrediction();
   }
 
   async savePredictionResults(): Promise<void> {
@@ -492,40 +486,6 @@ export class WorkspaceComponent implements OnInit {
 
         this.changeDetectorRef.detectChanges();
       });
-  }
-
-  private async processMessageToWebWorker(
-    workspaceWorkerMessage: WorkspaceWorkerMessage
-  ): Promise<Array<number>> {
-    if (!WorkspaceComponent.PREDICTION_WORKER) {
-      WorkspaceComponent.PREDICTION_WORKER = new Worker(
-        new URL('./workspace.worker', import.meta.url)
-      );
-    }
-
-    return new Promise((resolve, reject) => {
-      WorkspaceComponent.PREDICTION_WORKER.onmessage = ({ data }) => {
-        if (data.event === 'success' && 'prediction' in data) {
-          resolve(data.prediction);
-        } else if (data.event === 'progress') {
-          this.computationProgressBarMode = 'determinate';
-          this.computationProgressValue = data.value;
-          this.changeDetectorRef.detectChanges();
-        } else {
-          reject({ message: data.message });
-        }
-      };
-
-      WorkspaceComponent.PREDICTION_WORKER.onerror = ({}) => {
-        reject('Error occured during generation of forecast in service worker');
-      };
-
-      WorkspaceComponent.PREDICTION_WORKER.postMessage({
-        message: workspaceWorkerMessage,
-        worksheetData: this.worksheetData,
-        trainingConfig: this.trainingConfig,
-      });
-    });
   }
 
   private applyGeneratedPrediction(generatedPrediction: Array<number>): void {

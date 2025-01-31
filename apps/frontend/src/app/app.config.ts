@@ -11,6 +11,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideStore } from '@ngrx/store';
 import { seriesDataReducer } from './architecture/reducers/series-data.reducers';
 import { sidebarConfigReducer } from './architecture/reducers/sidebar-config.reducers';
+import { provideHttpClient } from '@angular/common/http';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,6 +19,7 @@ export const appConfig: ApplicationConfig = {
       seriesData: seriesDataReducer,
       sidebarConfig: sidebarConfigReducer,
     }),
+    provideHttpClient(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withViewTransitions()),
     provideClientHydration(withEventReplay()),

@@ -1,8 +1,4 @@
-import type {
-  BasicLayer,
-  HelpLayer,
-  TensorflowLayerFnMappings,
-} from '../_typings/workspace/sidebar-config.typings';
+import type { TensorflowLayerFnMappings } from '../_typings/workspace/sidebar-config.typings';
 
 export class TrainingConverter {
   static convertLayerToTensorFn<T extends keyof TensorflowLayerFnMappings>(
@@ -23,6 +19,5 @@ export class TrainingConverter {
       default:
         throw new Error('Cannot recognize this type of layer: ' + layer);
     }
-    0;
   }
 }

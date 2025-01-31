@@ -1,6 +1,5 @@
 import cluster from 'cluster';
 import * as os from 'os';
-import { Logger } from '@nestjs/common';
 
 type FunctionCb = (...args: any[]) => void;
 
@@ -8,7 +7,7 @@ export type ScaleOps = {
   scaleHorizontally(masterCb: FunctionCb, slaveCb: FunctionCb): void;
 };
 
-class ScaleHorizontally implements ScaleOps {
+class ScaleUtil implements ScaleOps {
   private static readonly CPUS_COUNT = os.cpus().length;
 
   scaleHorizontally(masterCb?: FunctionCb, slaveCb?: FunctionCb): void {
@@ -22,7 +21,7 @@ class ScaleHorizontally implements ScaleOps {
   }
 
   private respawnProcesses(): void {
-    for (let i = 0; i < ScaleHorizontally.CPUS_COUNT; i++) {
+    for (let i = 0; i < ScaleUtil.CPUS_COUNT; i++) {
       cluster.fork();
     }
 
@@ -33,4 +32,4 @@ class ScaleHorizontally implements ScaleOps {
   }
 }
 
-export default new ScaleHorizontally();
+export default new ScaleUtil();
