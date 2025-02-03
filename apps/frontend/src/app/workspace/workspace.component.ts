@@ -63,6 +63,8 @@ import { ActionButtonConfig } from '../_typings/action-buttons/action-buttons.ty
 import { ActionButtonComponent } from '../action-button/action-button.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { PredictionService } from '../_services/prediction.service';
+import { ActivatedRoute } from '@angular/router';
+import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available-cached-training-options.dto';
 
 @Component({
   selector: 'app-workspace',
@@ -105,9 +107,11 @@ export class WorkspaceComponent implements OnInit {
   readonly #destroyRef = inject(DestroyRef);
   private readonly alertService = inject(AlertService);
   private readonly predictionService = inject(PredictionService);
+  private readonly activatedRoute = inject(ActivatedRoute);
 
   private trainingConfig?: TrainingConfig;
   private fileSaveConfig?: FileSave;
+  cachedTrainConfigOpts?: AvailableCachedTrainingOptionsDTO;
 
   isMobile$: Observable<boolean> = inject(BreakpointObserver)
     .observe([Breakpoints.XSmall])
@@ -244,6 +248,8 @@ export class WorkspaceComponent implements OnInit {
     this.observeSidebarConfigChanged();
     this.observeWorksheetData();
     this.generateRandomData();
+
+    this.observeCachedTrainConfigOptions();
   }
 
   openLoadDataModal(): void {
@@ -564,5 +570,11 @@ export class WorkspaceComponent implements OnInit {
       this.chartComponent().update();
       this.changeDetectorRef.detectChanges();
     }
+  }
+
+  private observeCachedTrainConfigOptions(): void {
+    this.activatedRoute.data.subscribe((data) => {
+      this.cachedTrainConfigOpts = data['cachedTrainConfig'];
+    });
   }
 }

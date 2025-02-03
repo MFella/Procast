@@ -7,6 +7,7 @@ import { NestApplication, NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import ScaleUtil from './scale-util';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { CacheModelUtil } from './prediction/cache-model.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,7 +16,11 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   const port = process.env.PORT || 3000;
-  ScaleUtil.scaleHorizontally(null, listenFunction.bind(this, app, port));
+  ScaleUtil.scaleHorizontally(async () => {
+    Logger.log('Generation of models started');
+    await CacheModelUtil.createAndCacheTfModels();
+    Logger.log('Generation completed');
+  }, listenFunction.bind(this, app, port));
 }
 
 async function listenFunction(

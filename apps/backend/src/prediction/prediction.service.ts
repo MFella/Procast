@@ -6,6 +6,7 @@ import {
 import * as tf from '@tensorflow/tfjs-node';
 import { TrainingConfig } from '../_typings/prediction/training.typings';
 import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
+import { CacheModelUtil } from './cache-model.util';
 
 @Injectable()
 export class PredictionService {
@@ -17,7 +18,7 @@ export class PredictionService {
     optimizer: 'rmsprop',
   };
 
-  private static readonly DEFAULT_MOMENTUM_VALUE = 20;
+  private static readonly REQUIRED_DATA_LENGTH = 24;
   private static readonly DEFAULT_DATA_INPUT_LENGTH = 12;
   private static readonly DEFAULT_DATA_OUTPUT: OutputPrediction = [0, 0];
 
@@ -33,11 +34,23 @@ export class PredictionService {
     trainingConfig: TrainingConfig
   ): Promise<GeneratedPredictionDTO> {
     const outputLength = 2;
-    const sequenceLength = predictionData.length - outputLength - 1;
+    const sequenceLength =
+      PredictionService.REQUIRED_DATA_LENGTH - outputLength - 1;
     const batchSize = 1;
     const epochSize = 100;
 
-    const pastData = predictionData;
+    const pastData = predictionData.slice(
+      0,
+      PredictionService.REQUIRED_DATA_LENGTH
+    );
+    if (pastData.length < PredictionService.REQUIRED_DATA_LENGTH) {
+      pastData.unshift(
+        ...Array(PredictionService.REQUIRED_DATA_LENGTH - pastData.length).fill(
+          0
+        )
+      );
+    }
+
     let { optimizer, learningRate, lossFn, basicLayer, helpLayer } =
       trainingConfig;
     optimizer ??= PredictionService.DEFAULT_TRAINING_CONFIG.optimizer;
@@ -45,38 +58,14 @@ export class PredictionService {
     lossFn ??= PredictionService.DEFAULT_TRAINING_CONFIG.lossFn;
     helpLayer ??= PredictionService.DEFAULT_TRAINING_CONFIG.helpLayer;
     basicLayer ??= PredictionService.DEFAULT_TRAINING_CONFIG.basicLayer;
-    learningRate ??= PredictionService.DEFAULT_TRAINING_CONFIG.learningRate!;
 
     // Define a model for linear regression
-    const model = tf.sequential();
-
-    model.add(
-      tf.layers[basicLayer]({
-        units: 50,
-        inputShape: [sequenceLength, 1],
-        returnSequences: false,
-      })
-    );
-
-    model.add(
-      tf.layers[helpLayer]({
-        rate: 0.2,
-      })
-    );
-
-    // creation of output layer
-    model.add(tf.layers.dense({ units: outputLength }));
-
-    // Prepare the model for training: Specify the loss and the optimizer.
-    model.compile({
-      loss: tf.losses[lossFn],
-      optimizer:
-        optimizer === 'momentum'
-          ? tf.train.momentum(
-              learningRate,
-              PredictionService.DEFAULT_MOMENTUM_VALUE
-            )
-          : tf.train[optimizer](learningRate),
+    const model = await CacheModelUtil.resolveModel({
+      optimizer,
+      learningRate,
+      lossFn,
+      helpLayer,
+      basicLayer,
     });
 
     const { inputTensor, outputTensor } = this.createPredictionSequences(

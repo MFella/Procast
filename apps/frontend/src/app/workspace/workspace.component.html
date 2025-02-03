@@ -22,7 +22,7 @@
   </div>
   <div class="row-span-4 col-start-4 row-start-1 hidden sm:block">
     <ng-template #sidebarTemplateRef>
-      <app-sidebar />
+      <app-sidebar [cachedTrainConfigOpts]="cachedTrainConfigOpts" />
     </ng-template>
     <ng-container *ngTemplateOutlet="sidebarTemplateRef"></ng-container>
   </div>
