@@ -10,7 +10,7 @@ export class TrainingConverter {
         return 'gru' as any;
       case 'LSTM':
         return 'lstm' as any;
-      case 'SimpleRNN' as any:
+      case 'SimpleRNN':
         return 'simpleRNN' as any;
       case 'Dropout':
         return 'dropout' as any;

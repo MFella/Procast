@@ -21,8 +21,21 @@ html {
   );
 }
 
+@function is-important($important) {
+  @return #{if($important, '!important', '')};
+}
+
+@mixin native-font($important: false) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace is-important($important);
+}
+
 * {
-  @apply font-mono;
+  @include native-font();
+}
+
+.mat-mdc-option {
+  @include native-font(!important);
 }
 
 body {

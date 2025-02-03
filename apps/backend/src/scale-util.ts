@@ -1,23 +1,26 @@
 import cluster from 'cluster';
 import * as os from 'os';
 
-type FunctionCb = (...args: any[]) => void;
+type FunctionCb = (...args: any[]) => Promise<void>;
 
 export type ScaleOps = {
-  scaleHorizontally(masterCb: FunctionCb, slaveCb: FunctionCb): void;
+  scaleHorizontally(masterCb: FunctionCb, slaveCb: FunctionCb): Promise<void>;
 };
 
 class ScaleUtil implements ScaleOps {
   private static readonly CPUS_COUNT = os.cpus().length;
 
-  scaleHorizontally(masterCb?: FunctionCb, slaveCb?: FunctionCb): void {
+  async scaleHorizontally(
+    masterCb?: FunctionCb,
+    slaveCb?: FunctionCb
+  ): Promise<void> {
     if (cluster.isPrimary) {
+      await masterCb?.();
       this.respawnProcesses();
-      masterCb?.();
       return;
     }
 
-    slaveCb?.();
+    await slaveCb?.();
   }
 
   private respawnProcesses(): void {

@@ -1,7 +1,9 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { PredictionService } from './prediction.service';
 import { PredictionDataDTO } from '../_dtos/prediction/prediction-data.dto';
 import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
+import { AvailableCachedTrainingOptionsDTO } from '../_dtos/training/available-cached-training-options.dto';
+import { CacheModelUtil } from './cache-model.util';
 
 @Controller('prediction')
 export class PredictionController {
@@ -15,5 +17,10 @@ export class PredictionController {
       predictionDataDTO.data,
       predictionDataDTO.trainingConfig
     );
+  }
+
+  @Get('cached-train-config')
+  async getCachedTrainConfigOptions(): Promise<AvailableCachedTrainingOptionsDTO> {
+    return CacheModelUtil.getCachedTrainConfigOptions();
   }
 }

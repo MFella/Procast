@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { cachedTrainConfigResolver } from './_resolvers/cached-train-config.resolver';
 
 export const routes: Routes = [
   {
@@ -12,5 +13,8 @@ export const routes: Routes = [
       import('./workspace/workspace.component').then(
         (module) => module.WorkspaceComponent
       ),
+    resolve: {
+      cachedTrainConfig: cachedTrainConfigResolver,
+    },
   },
 ];

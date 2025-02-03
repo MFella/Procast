@@ -5,6 +5,7 @@ import { TrainingConfig } from '../_typings/workspace/sidebar-config.typings';
 import { environment } from '../../environments/environment.development';
 import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
 import { TrainingConverter } from '../_helpers/training-converter';
+import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available-cached-training-options.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +34,13 @@ export class PredictionService {
     );
   }
 
+  getCachedPredictionConfig(): Observable<AvailableCachedTrainingOptionsDTO> {
+    return this.httpClient.get<AvailableCachedTrainingOptionsDTO>(
+      `${this.getBackendUrl()}/prediction/cached-train-config`
+    );
+  }
+
   private getBackendUrl(): string {
-    return `${environment.backend_url}api`;
+    return environment.backend_url;
   }
 }

@@ -33,12 +33,6 @@
                   href="#"
                   >Sign In</a
                 >
-                <!-- <span class="text-slate-300">|</span>
-                    <a
-                      class="py-1 px-2 rounded-full transition-all border border-transparent hover:border-slate-200"
-                      href="#"
-                      >Log In</a
-                    > -->
               </span>
             </p>
           </div>
@@ -112,9 +106,14 @@
                   <mat-select [formControlName]="'basicLayer'">
                     @for (basicLayerOption of basicLayerOptions; track
                     basicLayerOption) {
-                    <mat-option [value]="basicLayerOption.value">{{
-                      basicLayerOption.viewValue
-                    }}</mat-option>
+                    <mat-option [value]="basicLayerOption.value" dir="rtl">
+                      <span class="pl-4">{{ basicLayerOption.viewValue }}</span>
+                      @if
+                      (this.cachedTrainConfigOpts()?.['basicLayer']?.includes(convertLayerOption(basicLayerOption.value)))
+                      {
+                      <mat-icon class="!m-0 scale-75">cached</mat-icon>
+                      }
+                    </mat-option>
                     }
                   </mat-select>
                 </mat-form-field>
@@ -131,9 +130,16 @@
                   <mat-select [formControlName]="'helpLayer'">
                     @for (helpLayerOption of helpLayerOptions; track
                     helpLayerOption) {
-                    <mat-option [value]="helpLayerOption.value">{{
-                      helpLayerOption.viewValue
-                    }}</mat-option>
+                    <mat-option [value]="helpLayerOption.value" dir="rtl"
+                      ><span class="pl-4"
+                        >{{ helpLayerOption.viewValue }}
+                      </span>
+                      @if
+                      (this.cachedTrainConfigOpts()?.['helpLayer']?.includes(convertLayerOption(helpLayerOption.value)))
+                      {
+                      <mat-icon class="!mr-2 scale-75">cached</mat-icon>
+                      }</mat-option
+                    >
                     }
                   </mat-select>
                 </mat-form-field>
@@ -149,9 +155,16 @@
                   <mat-label>Loss Function</mat-label>
                   <mat-select [formControlName]="'lossFn'">
                     @for (lossFnOption of lossFnOptions; track lossFnOption) {
-                    <mat-option [value]="lossFnOption.value">{{
-                      lossFnOption.viewValue
-                    }}</mat-option>
+                    <mat-option [value]="lossFnOption.value" dir="rtl">
+                      <span class="pl-4">
+                        {{ lossFnOption.viewValue }}
+                      </span>
+                      @if
+                      (this.cachedTrainConfigOpts()?.['lossFn']?.includes(lossFnOption.value))
+                      {
+                      <mat-icon class="!mr-2 scale-75">cached</mat-icon>
+                      }
+                    </mat-option>
                     }
                   </mat-select>
                 </mat-form-field>
@@ -168,9 +181,19 @@
                     <mat-select [formControlName]="'optimizer'">
                       @for (optimizerOption of optimizerOptions; track
                       optimizerOption) {
-                      <mat-option [value]="optimizerOption.value">{{
-                        optimizerOption.viewValue
-                      }}</mat-option>
+                      <mat-option
+                        [value]="optimizerOption.value"
+                        dir="rtl"
+                        class="!p-0 !pr-1"
+                        ><span class="pl-4">{{
+                          optimizerOption.viewValue
+                        }}</span>
+                        @if
+                        (this.cachedTrainConfigOpts()?.['optimizer']?.includes(optimizerOption.value))
+                        {
+                        <mat-icon class="!mr-2 scale-75">cached</mat-icon>
+                        }
+                      </mat-option>
                       }
                     </mat-select>
                   </mat-form-field>

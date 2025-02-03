@@ -1,4 +1,11 @@
-import { Component, DestroyRef, inject, OnInit, output } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  input,
+  OnInit,
+  output,
+} from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -41,6 +48,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
+import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available-cached-training-options.dto';
+import { TrainingConverter } from '../_helpers/training-converter';
 
 @Component({
   selector: 'app-sidebar',
@@ -60,6 +69,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 export class SidebarComponent implements OnInit {
   private readonly store = inject(Store);
   readonly #destroyRef = inject(DestroyRef);
+  readonly cachedTrainConfigOpts = input<AvailableCachedTrainingOptionsDTO>();
 
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta'];
   private readonly localStorageService = inject(LocalStorageService);
@@ -114,6 +124,10 @@ export class SidebarComponent implements OnInit {
     this.observeFileSaveConfigChanged();
     this.observeChartConfigChanged();
     this.observeTrainingConfigChanged();
+  }
+
+  convertLayerOption<T>(layer: T): T {
+    return TrainingConverter.convertLayerToTensorFn(layer as any);
   }
 
   private loadConfigsFromLocalStorage(): void {
