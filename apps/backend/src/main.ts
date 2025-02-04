@@ -7,7 +7,7 @@ import { NestApplication, NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import ScaleUtil from './scale-util';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { CacheModelUtil } from './prediction/cache-model.util';
+import { CacheModelUtil } from './app/prediction/cache-model.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

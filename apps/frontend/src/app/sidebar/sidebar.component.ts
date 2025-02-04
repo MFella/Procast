@@ -130,6 +130,15 @@ export class SidebarComponent implements OnInit {
     return TrainingConverter.convertLayerToTensorFn(layer as any);
   }
 
+  handleSummaryOpenStateChange(
+    ...summaryRefs: Array<HTMLDetailsElement>
+  ): void {
+    summaryRefs.forEach((detailsElement: HTMLDetailsElement) => {
+      if (detailsElement.hasAttribute('open')) {
+      }
+    });
+  }
+
   private loadConfigsFromLocalStorage(): void {
     this.trainingConfigFormGroup.setValue({
       basicLayer: this.localStorageService.getItem('basicLayer') ?? 'GRU',

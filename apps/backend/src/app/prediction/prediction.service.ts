@@ -7,6 +7,9 @@ import * as tf from '@tensorflow/tfjs-node';
 import { TrainingConfig } from '../_typings/prediction/training.typings';
 import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
 import { CacheModelUtil } from './cache-model.util';
+import { from, Observable, of, switchMap, take, takeUntil } from 'rxjs';
+import { CancelRequestInterceptor } from '../_interceptors/cancel-request.interceptor';
+import { ComputeInteractUtil } from '../util/compute-interact.util';
 
 @Injectable()
 export class PredictionService {
@@ -22,14 +25,7 @@ export class PredictionService {
   private static readonly DEFAULT_DATA_INPUT_LENGTH = 12;
   private static readonly DEFAULT_DATA_OUTPUT: OutputPrediction = [0, 0];
 
-  async startPrediction(
-    predictionData: Array<number>,
-    trainingConfig: TrainingConfig
-  ): Promise<GeneratedPredictionDTO> {
-    return await this.generatePrediction(predictionData, trainingConfig);
-  }
-
-  private async generatePrediction(
+  async generatePrediction(
     predictionData: Array<number>,
     trainingConfig: TrainingConfig
   ): Promise<GeneratedPredictionDTO> {
@@ -67,6 +63,7 @@ export class PredictionService {
       helpLayer,
       basicLayer,
     });
+    ComputeInteractUtil.COMPUTATION_STATUS$.next('compiled');
 
     const { inputTensor, outputTensor } = this.createPredictionSequences(
       pastData,
@@ -74,12 +71,12 @@ export class PredictionService {
     );
 
     // Train the model using the data.
+    ComputeInteractUtil.COMPUTATION_STATUS$.next('training');
     await model.fit(inputTensor, outputTensor, {
       epochs: epochSize,
       batchSize: batchSize,
-      verbose: 0,
+      // verbose: 0,
       callbacks: {
-        onTrainEnd: () => {},
         onEpochBegin: (epoch: number) => {
           const progressValue = Math.floor(
             (epoch / (epochSize * batchSize)) * 100
@@ -90,6 +87,7 @@ export class PredictionService {
       },
     });
 
+    ComputeInteractUtil.COMPUTATION_STATUS$.next('trained');
     const lastDataFromPast = pastData
       .slice(-sequenceLength)
       .map((value) => [value]);

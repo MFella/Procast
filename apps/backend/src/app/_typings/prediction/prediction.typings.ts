@@ -6,3 +6,5 @@ export type PredictionSequence = {
 };
 
 export type OutputPrediction = [number, number];
+
+export type ComputationStatus = 'pended' | 'compiled' | 'training' | 'trained';

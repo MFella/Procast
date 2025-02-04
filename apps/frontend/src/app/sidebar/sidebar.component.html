@@ -47,6 +47,12 @@
           class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-[1] shadow-sm"
         >
           <summary
+            (click)="
+              handleSummaryOpenStateChange(
+                chartConfigDetailsRef,
+                fileSaveConfigDetailsRef
+              )
+            "
             class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             <span
@@ -229,6 +235,12 @@
         <details
           #chartConfigDetailsRef
           class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-10 shadow-sm"
+          (click)="
+            handleSummaryOpenStateChange(
+              trainingConfigDetailsRef,
+              fileSaveConfigDetailsRef
+            )
+          "
         >
           <summary
             class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -307,10 +319,16 @@
     <ul class="space-y-1 relative z-[1] h-12 mt-2">
       <li>
         <details
-          #chartConfigDetailsRef
+          #fileSaveConfigDetailsRef
           class="group [&_summary::-webkit-details-marker]:hidden border border-gray-100 rounded-xl bg-gray-50 absolute w-full z-[1] shadow-sm"
         >
           <summary
+            (click)="
+              handleSummaryOpenStateChange(
+                chartConfigDetailsRef,
+                trainingConfigDetailsRef
+              )
+            "
             class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             <span

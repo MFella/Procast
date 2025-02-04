@@ -19,6 +19,7 @@ import fs from 'fs';
 import { AvailableCachedTrainingOptionsDTO } from '../_dtos/training/available-cached-training-options.dto';
 
 export class CacheModelUtil {
+  private static readonly TF_FILE_DESTINATION_PREFIX = 'file://';
   private static readonly CACHED_MODEL_FILES_DESTINATION = path.join(
     __dirname,
     'assets/models/'
@@ -36,16 +37,16 @@ export class CacheModelUtil {
     new Set<HelpLayer>(['batchNormalization', 'dropout']);
   private static readonly CACHED_LOSS_FN: Set<LossFn> = new Set<LossFn>([
     'logLoss',
-    'hingeLoss',
-    'huberLoss',
-    'meanSquaredError',
+    // 'hingeLoss',
+    // 'huberLoss',
+    // 'meanSquaredError',
   ]);
   private static readonly CACHED_OPTIMIZER: Set<Optimizer> = new Set<Optimizer>(
     ['sgd', 'rmsprop', 'adam']
   );
 
   private static readonly CACHED_LEARNING_RATE: Set<number> = new Set<number>([
-    0.001, 0.1, 1, 10,
+    1,
   ]);
 
   static async resolveModel(
@@ -107,11 +108,18 @@ export class CacheModelUtil {
   private static async getCachedModel(
     trainingConfig: TrainingConfig
   ): Promise<LayersModel> {
-    const filePath = CacheModelUtil.getCachedModelFilePath(trainingConfig);
+    const filePath = `${CacheModelUtil.getCachedModelFilePath(
+      trainingConfig
+    )}/${CacheModelUtil.CACHE_MODEL_STATIC_FILE_NAME}`;
 
-    const sequentialModel = await loadLayersModel(
-      `${filePath}/${CacheModelUtil.CACHE_MODEL_STATIC_FILE_NAME}`
-    );
+    if (
+      !fs.existsSync(
+        filePath.split(CacheModelUtil.TF_FILE_DESTINATION_PREFIX).at(-1)
+      )
+    ) {
+      return;
+    }
+    const sequentialModel = await loadLayersModel(filePath);
 
     sequentialModel.compile({
       loss: losses[trainingConfig.lossFn],
@@ -174,7 +182,7 @@ export class CacheModelUtil {
     trainingConfig: TrainingConfig
   ): string {
     return (
-      `file://${CacheModelUtil.CACHED_MODEL_FILES_DESTINATION}` +
+      `${CacheModelUtil.TF_FILE_DESTINATION_PREFIX}${CacheModelUtil.CACHED_MODEL_FILES_DESTINATION}` +
       Object.keys(trainingConfig)
         .sort()
         .map((key) => trainingConfig[key])

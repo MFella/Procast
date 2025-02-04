@@ -9,7 +9,19 @@ module.exports = {
     ...createGlobPatternsForDependencies(__dirname),
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        fadein: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+      },
+      animation: {
+        fadein: {
+          fadein: 'fadein 1s linear infinite',
+        },
+      },
+    },
   },
   plugins: [],
 };
