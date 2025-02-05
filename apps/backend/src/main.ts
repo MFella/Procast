@@ -18,6 +18,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   ScaleUtil.scaleHorizontally(async () => {
     Logger.log('Generation of models started');
+
     await CacheModelUtil.createAndCacheTfModels();
     Logger.log('Generation completed');
   }, listenFunction.bind(this, app, port));
