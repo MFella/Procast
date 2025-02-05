@@ -57,7 +57,17 @@ import {
   ProgressBarMode,
 } from '@angular/material/progress-bar';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { firstValueFrom, map, Observable, take } from 'rxjs';
+import {
+  catchError,
+  defaultIfEmpty,
+  firstValueFrom,
+  map,
+  Observable,
+  of,
+  Subject,
+  take,
+  takeUntil,
+} from 'rxjs';
 import { GenericModalComponent } from '../generic-modal/generic-modal.component';
 import { ActionButtonConfig } from '../_typings/action-buttons/action-buttons.typings';
 import { ActionButtonComponent } from '../action-button/action-button.component';
@@ -108,6 +118,8 @@ export class WorkspaceComponent implements OnInit {
   private readonly alertService = inject(AlertService);
   private readonly predictionService = inject(PredictionService);
   private readonly activatedRoute = inject(ActivatedRoute);
+
+  private readonly requestCancelled$: Subject<void> = new Subject<void>();
 
   private trainingConfig?: TrainingConfig;
   private fileSaveConfig?: FileSave;
@@ -198,6 +210,13 @@ export class WorkspaceComponent implements OnInit {
 
   chartLegend = true;
 
+  stopPredictionActionButtonConfig: ActionButtonConfig = {
+    label: 'Stop',
+    iconName: 'cancel',
+    clickCallback: () => this.requestCancelled$.next(),
+    resolveLinkDisabled: () => false,
+  };
+
   actionButtonConfigList: Array<ActionButtonConfig> = [
     {
       label: 'Generate',
@@ -276,27 +295,49 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async generatePrediction(): Promise<void> {
+    const predictionActionButtonConfig = this.actionButtonConfigList.shift()!;
+
     try {
       this.lastPredictionFailed = false;
       this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
       let generatedPrediction: Array<number> = [];
+
       const data = Array.from(this.worksheetData.values()).map(
         (entry) => entry.value
       );
-      const predictionResult = await firstValueFrom(
-        this.predictionService.startPrediction(data, this.trainingConfig!)
+      this.actionButtonConfigList.unshift(
+        this.stopPredictionActionButtonConfig
       );
 
-      this.computationProgressValue = 100;
-      this.lastPredictionFailed = false;
-      generatedPrediction = predictionResult.result;
+      const predictionResult = await firstValueFrom(
+        this.predictionService
+          .startPrediction(data, this.trainingConfig!)
+          .pipe(takeUntil(this.requestCancelled$), defaultIfEmpty(null))
+      );
 
-      this.applyGeneratedPrediction(generatedPrediction);
+      this.actionButtonConfigList.shift();
+      this.actionButtonConfigList.unshift(predictionActionButtonConfig);
+
+      this.computationProgressValue = predictionResult ? 100 : 0;
+      this.computationProgressBarMode = 'determinate';
+
       this.isPredictionInProgress = false;
+
+      if (predictionResult) {
+        generatedPrediction = predictionResult.result;
+        this.applyGeneratedPrediction(generatedPrediction);
+      }
     } catch (error: unknown) {
+      this.actionButtonConfigList.shift();
+      this.actionButtonConfigList.unshift(predictionActionButtonConfig);
+
       this.isPredictionInProgress = false;
       this.lastPredictionFailed = true;
+
+      this.computationProgressBarMode = 'determinate';
+      this.computationProgressValue = 100;
+
       if (TypeHelper.isUnknownAnObject(error, 'message')) {
         this.alertService.showErrorSnackBar(error.message);
       } else {

@@ -1,0 +1,7 @@
+details[open] summary ~ * {
+  animation: fadein 0.4s forwards;
+}
+
+details.closing summary ~ * {
+  animation: fadeout 0.4s forwards;
+}

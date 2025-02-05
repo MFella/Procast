@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PredictionModule } from '../prediction/prediction.module';
+import { PredictionModule } from './prediction/prediction.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CancelRequestInterceptor } from './_interceptors/cancel-request.interceptor';
 
 @Module({
   imports: [PredictionModule],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CancelRequestInterceptor,
+    },
+  ],
 })
 export class AppModule {}

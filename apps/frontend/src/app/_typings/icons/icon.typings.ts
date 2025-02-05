@@ -5,4 +5,5 @@ export type IconName =
   | 'import'
   | 'redo'
   | 'undo'
-  | 'blitz';
+  | 'blitz'
+  | 'cancel';
