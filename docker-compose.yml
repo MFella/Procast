@@ -1,0 +1,27 @@
+services:
+  # frontend
+  frontend:
+    build:
+      dockerfile: ./apps/frontend/Dockerfile.dev
+      target: dev
+      context: .
+    command: npm run dev:front
+    ports:
+      - '4200:4200'
+    depends_on:
+      - backend
+    volumes:
+      - .:/app
+      - /app/node_modules
+  # backend
+  backend:
+    build:
+      dockerfile: ./apps/backend/Dockerfile.dev
+      target: dev
+      context: .
+    command: npm run dev:back
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules

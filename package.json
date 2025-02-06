@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev:front": "npx nx run frontend:serve",
+    "build:front": "npx nx run frontend:build",
+    "build:back": "npx nx run backend:build",
+    "dev:front": "npx nx run frontend:serve --host=0.0.0.0 --disable-host-check",
     "dev:back": "npx nx run backend:serve"
   },
   "private": true,
