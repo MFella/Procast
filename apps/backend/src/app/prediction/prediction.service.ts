@@ -7,8 +7,6 @@ import * as tf from '@tensorflow/tfjs-node';
 import { TrainingConfig } from '../_typings/prediction/training.typings';
 import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
 import { CacheModelUtil } from './cache-model.util';
-import { from, Observable, of, switchMap, take, takeUntil } from 'rxjs';
-import { CancelRequestInterceptor } from '../_interceptors/cancel-request.interceptor';
 import { ComputeInteractUtil } from '../util/compute-interact.util';
 
 @Injectable()
@@ -94,10 +92,11 @@ export class PredictionService {
     const lastDataFromPastTensor = tf.tensor3d([lastDataFromPast]);
 
     const prediction = model.predict(lastDataFromPastTensor) as tf.Tensor;
+    const result = Object.values(
+      prediction.dataSync()
+    ) as unknown as typeof PredictionService.DEFAULT_DATA_OUTPUT;
     return {
-      result: Object.values(
-        prediction.dataSync()
-      ) as unknown as typeof PredictionService.DEFAULT_DATA_OUTPUT,
+      result,
     };
   }
 
