@@ -1,4 +1,5 @@
 import { losses } from '@tensorflow/tfjs';
+import { WorkerMessage } from './prediction.typings';
 
 export type HelpLayer = 'dropout' | 'batchNormalization';
 export type BasicLayer = 'lstm' | 'gru' | 'simpleRNN';
@@ -22,3 +23,5 @@ export type TrainingConfig = {
   optimizer: Optimizer;
   learningRate?: number;
 };
+
+export type WorkerMessageFitPayload = WorkerMessage['fit'];
