@@ -2,9 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  CUSTOM_ELEMENTS_SCHEMA,
   DestroyRef,
-  ElementRef,
   Inject,
   inject,
   OnInit,
@@ -141,6 +139,7 @@ export class WorkspaceComponent implements OnInit {
   worksheetName = 'Untilted';
   computationProgressValue: number = 0;
   computationProgressBarMode: ProgressBarMode = 'determinate';
+  scheduledPredictionJobId: string = '';
 
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta'];
   canStartPrediction = false;
@@ -169,7 +168,7 @@ export class WorkspaceComponent implements OnInit {
         tension: 0.2,
         borderColor: 'blue',
         segment: {
-          borderColor: (ctx) =>
+          borderColor: (ctx: any) =>
             this.isPredicted(ctx, [10, 10]) ? 'gray' : 'blue',
           borderDash: (ctx: any) => this.isPredicted(ctx, [10, 10]),
           backgroundColor: (ctx: any) =>
@@ -221,7 +220,7 @@ export class WorkspaceComponent implements OnInit {
     {
       label: 'Generate',
       iconName: 'play',
-      clickCallback: this.generatePrediction.bind(this),
+      clickCallback: this.schedulePrediction.bind(this),
       resolveLinkDisabled: () =>
         !this.canStartPrediction || this.isPredictionInProgress,
     },
@@ -294,14 +293,14 @@ export class WorkspaceComponent implements OnInit {
       });
   }
 
-  async generatePrediction(): Promise<void> {
+  async schedulePrediction(): Promise<void> {
     const predictionActionButtonConfig = this.actionButtonConfigList.shift()!;
 
     try {
       this.lastPredictionFailed = false;
       this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
-      let generatedPrediction: Array<number> = [];
+      // let scheduledPrediction: Array<number> = [];
 
       const data = Array.from(this.worksheetData.values()).map(
         (entry) => entry.value
@@ -310,24 +309,25 @@ export class WorkspaceComponent implements OnInit {
         this.stopPredictionActionButtonConfig
       );
 
-      const predictionResult = await firstValueFrom(
+      const scheduledPredictionResult = await firstValueFrom(
         this.predictionService
-          .startPrediction(data, this.trainingConfig!)
+          .schedulePrediction(data, this.trainingConfig!)
           .pipe(takeUntil(this.requestCancelled$), defaultIfEmpty(null))
       );
 
       this.actionButtonConfigList.shift();
       this.actionButtonConfigList.unshift(predictionActionButtonConfig);
 
-      this.computationProgressValue = predictionResult ? 100 : 0;
+      this.computationProgressValue = scheduledPredictionResult ? 100 : 0;
       this.computationProgressBarMode = 'determinate';
 
       this.isPredictionInProgress = false;
 
-      if (predictionResult) {
-        generatedPrediction = predictionResult.result;
-        this.applyGeneratedPrediction(generatedPrediction);
-      }
+      // if (predictionResult) {
+      //   scheduledPrediction = predictionResult;
+      //   this.applyGeneratedPrediction(scheduledPrediction);
+      // }
+      this.scheduledPredictionJobId = scheduledPredictionResult?.jobId ?? '';
     } catch (error: unknown) {
       this.actionButtonConfigList.shift();
       this.actionButtonConfigList.unshift(predictionActionButtonConfig);

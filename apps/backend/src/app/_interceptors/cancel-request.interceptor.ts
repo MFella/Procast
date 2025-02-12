@@ -33,7 +33,7 @@ export class CancelRequestInterceptor implements NestInterceptor {
         // when model is training, computation should be cancelled
         // TODO: separate computation to separate thread/worker
         // process.exit(0);
-        ComputeInteractUtil.ABORT_CONTROLLER.abort();
+        // ComputeInteractUtil.ABORT_CONTROLLER.abort();
       });
 
     return next.handle();

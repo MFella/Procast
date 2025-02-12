@@ -17,7 +17,7 @@ export class StartComponent implements OnInit {
   particlesConfig = particlesConfig;
 
   ngOnInit(): void {
-    this.loadNgParticlesEngine();
+    // this.loadNgParticlesEngine();
   }
 
   private loadNgParticlesEngine(): void {

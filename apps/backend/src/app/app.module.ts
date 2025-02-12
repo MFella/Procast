@@ -8,8 +8,8 @@ import { BullModule } from '@nestjs/bullmq';
   imports: [
     BullModule.forRoot({
       connection: {
-        host: 'localhost',
         port: 6379,
+        host: 'redis',
       },
     }),
     PredictionModule,

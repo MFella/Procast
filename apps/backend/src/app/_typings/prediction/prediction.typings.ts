@@ -1,10 +1,4 @@
-import {
-  LayersModel,
-  Rank,
-  Tensor,
-  Tensor2D,
-  Tensor3D,
-} from '@tensorflow/tfjs';
+import { Rank, Tensor } from '@tensorflow/tfjs';
 import { TrainingConfig } from './training.typings';
 
 export type PredictionSequence = {
@@ -14,7 +8,12 @@ export type PredictionSequence = {
 
 export type OutputPrediction = [number, number];
 
-export type ComputationStatus = 'pended' | 'compiled' | 'training' | 'trained';
+export type ComputationStatus =
+  | 'unset'
+  | 'pended'
+  | 'compiled'
+  | 'training'
+  | 'trained';
 
 export type WorkerMessage = {
   fit: {
@@ -22,7 +21,9 @@ export type WorkerMessage = {
     epochs: number;
     batchSize: number;
     lastDataFromPast: number[][];
-  } & PredictionSequence;
+    pastData: Array<number>;
+    sequenceLength: number;
+  };
 };
 
 type WorkerInputData<T extends keyof WorkerMessage> = {

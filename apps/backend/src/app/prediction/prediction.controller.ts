@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { PredictionService } from './prediction.service';
 import { PredictionDataDTO } from '../_dtos/prediction/prediction-data.dto';
-import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
+import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';
 import { AvailableCachedTrainingOptionsDTO } from '../_dtos/training/available-cached-training-options.dto';
 import { CacheModelUtil } from './cache-model.util';
 
@@ -12,7 +12,7 @@ export class PredictionController {
   @Post()
   async startPrediction(
     @Body() predictionDataDTO: PredictionDataDTO
-  ): Promise<GeneratedPredictionDTO> {
+  ): Promise<ScheduledPredictionDTO> {
     return await this.predictionService.generatePrediction(
       predictionDataDTO.data,
       predictionDataDTO.trainingConfig
@@ -22,5 +22,12 @@ export class PredictionController {
   @Get('cached-train-config')
   async getCachedTrainConfigOptions(): Promise<AvailableCachedTrainingOptionsDTO> {
     return CacheModelUtil.getCachedTrainConfigOptions();
+  }
+
+  @Get('cached/:id')
+  async getCachedPredictionData(
+    @Param('jobId') jobId: string
+  ): Promise<Array<number>> {
+    return await this.predictionService.getCachedPredictionData(jobId);
   }
 }

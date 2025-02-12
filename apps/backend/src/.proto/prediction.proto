@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package prediction;
+
+service PredictionService {
+    rpc ObserveStatus(StatusRequest) returns (stream StatusResponse);
+}
+
+enum ComputationStatus {
+    UNSET = 0;
+    PENDED = 1;
+    COMPILED = 2;
+    TRAINING = 3;
+    TRAINED = 4;
+}
+
+message StatusRequest {
+    string jobId = 1;
+}
+
+message StatusResponse {
+    ComputationStatus status = 1;
+}

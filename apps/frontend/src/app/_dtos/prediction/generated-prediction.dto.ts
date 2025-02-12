@@ -1,3 +1,6 @@
-export type GeneratedPredictionDTO = {
-  result: [number, number];
+import { ComputationStatus } from '../../_typings/prediction/prediction.typings';
+
+export type ScheduledPredictionDTO = {
+  jobId: string;
+  status: ComputationStatus;
 };

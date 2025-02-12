@@ -8,10 +8,10 @@ import type {
   TrainingConfig,
   WorkerMessageFitPayload,
 } from '../_typings/prediction/training.typings';
-import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
+import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Job, Queue } from 'bullmq';
 import { ComputeInteractUtil } from '../util/compute-interact.util';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
 
 @Injectable()
 export class PredictionService {
@@ -24,18 +24,16 @@ export class PredictionService {
   };
 
   private static readonly REQUIRED_DATA_LENGTH = 24;
-  private static readonly DEFAULT_DATA_INPUT_LENGTH = 12;
-  private static readonly DEFAULT_DATA_OUTPUT: OutputPrediction = [0, 0];
 
   constructor(
-    @InjectQueue('trainModel')
-    private trainModelQueue: Queue<WorkerMessageFitPayload>
+    @InjectQueue('prediction')
+    private predictionQueue: Queue
   ) {}
 
   async generatePrediction(
     predictionData: Array<number>,
     trainingConfig: TrainingConfig
-  ): Promise<GeneratedPredictionDTO> {
+  ): Promise<ScheduledPredictionDTO> {
     const outputLength = 2;
     const sequenceLength =
       PredictionService.REQUIRED_DATA_LENGTH - outputLength - 1;
@@ -68,51 +66,33 @@ export class PredictionService {
       .slice(-sequenceLength)
       .map((value) => [value]);
 
-    const { inputTensor, outputTensor } = this.createPredictionSequences(
-      pastData,
-      sequenceLength
-    );
-
-    const trainModelWorker = await this.trainModelQueue.add({
+    const trainModelWorker = await this.predictionQueue.add('trainModel', {
       trainingConfig,
       lastDataFromPast,
-      inputTensor,
-      outputTensor,
+      pastData,
+      sequenceLength,
       batchSize,
       epochs: epochSize,
     });
 
+    setTimeout(async () => {
+      ComputeInteractUtil.ABORT_CONTROLLER.abort();
+    }, 2000);
+
     return {
-      result: trainModelWorker.returnvalue,
+      jobId: trainModelWorker.id,
+      status: 'pended',
     };
   }
 
-  private createPredictionSequences(
-    data: Array<number>,
-    inputLength: number = PredictionService.DEFAULT_DATA_INPUT_LENGTH,
-    outputLength: number = PredictionService.DEFAULT_DATA_OUTPUT.length
-  ): PredictionSequence {
-    if (data.length < inputLength + outputLength) {
-      throw new Error(
-        'Cannot make prediction - provided historical data is too short to train model'
-      );
+  async getCachedPredictionData(jobId: string): Promise<Array<number>> {
+    const predictionJob = (await this.predictionQueue.getJob(jobId)) as
+      | Job
+      | undefined;
+    if (!predictionJob) {
+      return [];
     }
 
-    let inputSequence: any = [];
-    const outputSequence: any = [];
-
-    for (let i = 0; i < data.length - inputLength - outputLength; i++) {
-      inputSequence.push(data.slice(i, i + inputLength));
-      outputSequence.push(
-        data.slice(i + inputLength, i + inputLength + outputLength)
-      );
-    }
-
-    inputSequence = inputSequence.map((input) => input.map((value) => [value]));
-
-    return {
-      inputTensor: tf.tensor3d(inputSequence),
-      outputTensor: tf.tensor2d(outputSequence),
-    };
+    return predictionJob.data;
   }
 }

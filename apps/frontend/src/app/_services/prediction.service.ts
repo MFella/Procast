@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { TrainingConfig } from '../_typings/workspace/sidebar-config.typings';
 import { environment } from '../../environments/environment.development';
-import { GeneratedPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
+import { ScheduledPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
 import { TrainingConverter } from '../_helpers/training-converter';
 import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available-cached-training-options.dto';
 
@@ -13,12 +13,12 @@ import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available
 export class PredictionService {
   constructor(private readonly httpClient: HttpClient) {}
 
-  startPrediction(
+  schedulePrediction(
     data: Array<number>,
     trainingConfig: TrainingConfig
-  ): Observable<GeneratedPredictionDTO> {
-    return this.httpClient.post<GeneratedPredictionDTO>(
-      `${this.getBackendUrl()}/prediction`,
+  ): Observable<ScheduledPredictionDTO> {
+    return this.httpClient.post<ScheduledPredictionDTO>(
+      `${this.getBackendUrl()}`,
       {
         data,
         trainingConfig: {
@@ -34,13 +34,19 @@ export class PredictionService {
     );
   }
 
+  getPredictionData(predictionJobId: string): Observable<Array<number>> {
+    return this.httpClient.get<Array<number>>(
+      `${this.getBackendUrl()}/cached/${predictionJobId}`
+    );
+  }
+
   getCachedPredictionConfig(): Observable<AvailableCachedTrainingOptionsDTO> {
     return this.httpClient.get<AvailableCachedTrainingOptionsDTO>(
-      `${this.getBackendUrl()}/prediction/cached-train-config`
+      `${this.getBackendUrl()}/cached-train-config`
     );
   }
 
   private getBackendUrl(): string {
-    return environment.backend_url;
+    return `${environment.backend_url}/prediction`;
   }
 }

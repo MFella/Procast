@@ -1,26 +1,33 @@
-import { Processor, Process, OnQueueProgress } from '@nestjs/bull';
+import { Processor, OnWorkerEvent, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { OutputPrediction } from '../../_typings/prediction/prediction.typings';
-import trainModel from '../../_workers/train-model.worker';
-import { WorkerMessageFitPayload } from '../../_typings/prediction/training.typings';
-import { WorkerHost } from '@nestjs/bullmq';
+import { TrainModelWorker } from '../../_workers/train-model.worker';
 import { ComputeInteractUtil } from '../../util/compute-interact.util';
+import { OutputPrediction } from '../../_typings/prediction/prediction.typings';
 
-@Processor('trainModel')
-export class TrainModelConsumer extends WorkerHost {
-  @Process()
-  async process(
-    job: Job<WorkerMessageFitPayload, any, string>
-  ): Promise<OutputPrediction> {
-    ComputeInteractUtil.ABORT_CONTROLLER.signal.onabort = async () => {
-      await this.worker.pause();
-      await this.worker.close();
-    };
-    return await trainModel(job.data, job.updateProgress);
+@Processor({ name: 'prediction' })
+export class PredictionConsumer extends WorkerHost {
+  async process(job: Job<any, any, string>): Promise<OutputPrediction> {
+    ComputeInteractUtil.ABORT_CONTROLLER.signal.addEventListener(
+      'abort',
+      async () => {
+        try {
+          await job.remove();
+        } catch (err: unknown) {
+          console.log(err);
+        }
+      }
+    );
+
+    return await TrainModelWorker.trainModel(job.data, job.id);
   }
 
-  @OnQueueProgress()
-  async sendProgressToClient(job: Job, progress: number): Promise<void> {
-    console.log('here is progress ' + progress);
+  @OnWorkerEvent('completed')
+  onCompleted() {
+    console.log('Queue is completed');
+  }
+
+  @OnWorkerEvent('failed')
+  onComputationFailed() {
+    console.log('Queue failed');
   }
 }
