@@ -9,16 +9,16 @@ import { BullModule } from '@nestjs/bullmq';
     BullModule.forRoot({
       connection: {
         port: 6379,
-        host: 'redis',
+        host: 'localhost',
       },
     }),
     PredictionModule,
   ],
   providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: CancelRequestInterceptor,
-    },
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: CancelRequestInterceptor,
+    // },
   ],
 })
 export class AppModule {}

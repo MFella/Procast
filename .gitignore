@@ -17,6 +17,15 @@ node_modules
 .settings/
 *.sublime-workspace
 
+# proto-generated
+**/.proto/generated/*
+**/*.pbsc.ts
+**/*.pbconf.ts
+**/*pb.ts
+
+# exe
+**/*.exe
+
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json
@@ -42,3 +51,4 @@ Thumbs.db
 .nx/workspace-data
 
 .angular
+

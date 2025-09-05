@@ -3,6 +3,7 @@ import { PredictionController } from './prediction.controller';
 import { PredictionService } from './prediction.service';
 import { BullModule } from '@nestjs/bullmq';
 import { PredictionConsumer } from '../_queues/consumers/train-model.consumer';
+import { TrainModelWorker } from '../_workers/train-model.worker';
 
 @Module({
   imports: [
@@ -10,7 +11,7 @@ import { PredictionConsumer } from '../_queues/consumers/train-model.consumer';
       name: 'prediction',
     }),
   ],
-  controllers: [PredictionController],
+  controllers: [PredictionController, TrainModelWorker],
   providers: [PredictionService, PredictionConsumer],
 })
 export class PredictionModule {}

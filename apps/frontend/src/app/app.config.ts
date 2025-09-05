@@ -1,4 +1,8 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  importProvidersFrom,
+  provideZoneChangeDetection,
+} from '@angular/core';
 import { provideRouter, withViewTransitions } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -12,6 +16,8 @@ import { provideStore } from '@ngrx/store';
 import { seriesDataReducer } from './architecture/reducers/series-data.reducers';
 import { sidebarConfigReducer } from './architecture/reducers/sidebar-config.reducers';
 import { provideHttpClient } from '@angular/common/http';
+import { GrpcCoreModule } from '@ngx-grpc/core';
+import { GrpcWebClientModule } from '@ngx-grpc/grpc-web-client';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,5 +31,11 @@ export const appConfig: ApplicationConfig = {
     provideClientHydration(withEventReplay()),
     provideCharts(withDefaultRegisterables()),
     provideAnimationsAsync(),
+    importProvidersFrom(
+      GrpcCoreModule.forRoot(),
+      GrpcWebClientModule.forRoot({
+        settings: { host: 'http://localhost:8080' },
+      })
+    ),
   ],
 };

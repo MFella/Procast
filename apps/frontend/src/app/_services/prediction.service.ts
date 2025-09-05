@@ -1,17 +1,25 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TrainingConfig } from '../_typings/workspace/sidebar-config.typings';
 import { environment } from '../../environments/environment.development';
 import { ScheduledPredictionDTO } from '../_dtos/prediction/generated-prediction.dto';
 import { TrainingConverter } from '../_helpers/training-converter';
 import { AvailableCachedTrainingOptionsDTO } from '../_dtos/prediction/available-cached-training-options.dto';
+import { PredictionServiceClient } from '../../.proto/prediction.pbsc';
+import {
+  PredictionProgressRequest,
+  PredictionProgressResponse,
+} from '../../.proto/prediction.pb';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PredictionService {
-  constructor(private readonly httpClient: HttpClient) {}
+  constructor(
+    private readonly httpClient: HttpClient,
+    private readonly predictionServiceClient: PredictionServiceClient
+  ) {}
 
   schedulePrediction(
     data: Array<number>,
@@ -43,6 +51,20 @@ export class PredictionService {
   getCachedPredictionConfig(): Observable<AvailableCachedTrainingOptionsDTO> {
     return this.httpClient.get<AvailableCachedTrainingOptionsDTO>(
       `${this.getBackendUrl()}/cached-train-config`
+    );
+  }
+
+  observePredictionProgress(
+    jobId: string
+  ): Observable<PredictionProgressResponse | null> {
+    if (!jobId) {
+      return of(null);
+    }
+
+    const predictionStatusRequest = new PredictionProgressRequest({ jobId });
+
+    return this.predictionServiceClient.observeProgress(
+      predictionStatusRequest
     );
   }
 

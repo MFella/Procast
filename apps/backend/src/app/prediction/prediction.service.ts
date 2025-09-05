@@ -1,13 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  type OutputPrediction,
-  type PredictionSequence,
-} from '../_typings/prediction/prediction.typings';
-import * as tf from '@tensorflow/tfjs-node';
-import type {
-  TrainingConfig,
-  WorkerMessageFitPayload,
-} from '../_typings/prediction/training.typings';
+import type { TrainingConfig } from '../_typings/prediction/training.typings';
 import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
@@ -81,7 +73,6 @@ export class PredictionService {
 
     return {
       jobId: trainModelWorker.id,
-      status: 'pended',
     };
   }
 

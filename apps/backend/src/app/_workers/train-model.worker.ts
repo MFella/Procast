@@ -2,43 +2,48 @@ import { CacheModelUtil } from '../prediction/cache-model.util';
 import { ComputeInteractUtil } from '../util/compute-interact.util';
 import { tensor2d, tensor3d } from '@tensorflow/tfjs';
 import {
-  ComputationStatus,
   PredictionSequence,
   type OutputPrediction,
 } from '../_typings/prediction/prediction.typings';
 import { resolve } from 'path';
 import { WorkerMessageFitPayload } from '../_typings/prediction/training.typings';
-import { GrpcStreamMethod } from '@nestjs/microservices';
+import { GrpcMethod } from '@nestjs/microservices';
 import { BehaviorSubject, filter, map, Observable } from 'rxjs';
+import { Controller } from '@nestjs/common';
+import type {
+  TensorLike2D,
+  TensorLike3D,
+} from '../_typings/tensorflow/tfjs_supp';
 
 export const filename = resolve(__filename);
+
+type PredictionStatusRequest = {
+  jobId: string;
+};
 
 type ComputationProgress = {
   progress: number;
   jobId: string;
 };
 
+@Controller()
 export class TrainModelWorker {
   private static readonly DEFAULT_DATA_INPUT_LENGTH = 12;
   private static readonly DEFAULT_DATA_OUTPUT: OutputPrediction = [0, 0];
-  private static readonly COMPUTATION_PROGRESS$: BehaviorSubject<ComputationProgress> =
+  static readonly COMPUTATION_PROGRESS$: BehaviorSubject<ComputationProgress> =
     new BehaviorSubject<ComputationProgress>(void 0);
 
-  constructor() {}
-
-  @GrpcStreamMethod('PredictionService')
-  observeStatus(
-    jobId: string
+  @GrpcMethod('PredictionService', 'ObserveProgress')
+  observeProgress(
+    predictionStatusRequest: PredictionStatusRequest
   ): Observable<Pick<ComputationProgress, 'progress'>> {
-    return TrainModelWorker.COMPUTATION_PROGRESS$.asObservable().pipe(
-      filter((computationProgress) => computationProgress?.jobId === jobId),
-      map((computationProgress) => {
-        delete computationProgress.jobId;
-        return computationProgress satisfies Pick<
-          ComputationProgress,
-          'progress'
-        >;
-      })
+    const jobId = predictionStatusRequest['jobId'];
+    return TrainModelWorker.COMPUTATION_PROGRESS$.pipe(
+      filter(
+        (computationProgress) =>
+          !!computationProgress && computationProgress?.jobId === jobId
+      ),
+      map(({ progress }) => ({ progress }))
     );
   }
 
@@ -72,26 +77,25 @@ export class TrainModelWorker {
       helpLayer,
       basicLayer,
     });
-    ComputeInteractUtil.COMPUTATION_STATUS$.next('compiled');
 
     // Train the model using the data.
-    ComputeInteractUtil.COMPUTATION_STATUS$.next('training');
-
     await model.fit(inputTensor, outputTensor, {
       epochs,
       batchSize,
       verbose: 0,
       callbacks: {
         onTrainBegin: () => {
-          TrainModelWorker.COMPUTATION_PROGRESS$.next({
+          process.send({
+            pid: process.pid,
+            computationProgress: 0,
             jobId,
-            progress: 0,
           });
         },
         onTrainEnd: () => {
-          TrainModelWorker.COMPUTATION_PROGRESS$.next({
+          process.send({
+            pid: process.pid,
+            computationProgress: 100,
             jobId,
-            progress: 100,
           });
         },
         onEpochBegin: async (epoch) => {
@@ -99,10 +103,10 @@ export class TrainModelWorker {
             (epoch / (epochs * batchSize)) * 100
           );
           if (progressValue % 10 === 0) {
-            console.log('Progress: ' + progressValue);
-            TrainModelWorker.COMPUTATION_PROGRESS$.next({
+            process.send({
+              pid: process.pid,
+              computationProgress: progressValue,
               jobId,
-              progress: progressValue,
             });
           }
         },
@@ -115,6 +119,11 @@ export class TrainModelWorker {
     const prediction = model.predict(lastDataFromPastTensor) as any;
     const result = Object.values(prediction.dataSync()) as OutputPrediction;
 
+    process.send({
+      pid: process.pid,
+      predictionResult: result,
+      jobId,
+    });
     return result;
   }
 
@@ -129,8 +138,8 @@ export class TrainModelWorker {
       );
     }
 
-    let inputSequence: any = [];
-    const outputSequence: any = [];
+    let inputSequence: TensorLike3D = [];
+    const outputSequence: TensorLike2D = [];
 
     for (let i = 0; i < data.length - inputLength - outputLength; i++) {
       inputSequence.push(data.slice(i, i + inputLength));
