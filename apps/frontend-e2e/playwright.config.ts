@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: {
     command: 'npx nx run procast:serve',
     url: 'http://localhost:4200',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env['CI'],
     cwd: workspaceRoot,
   },
   projects: [

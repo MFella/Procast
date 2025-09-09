@@ -19,7 +19,7 @@
   "nxCloudId": "679892abeb6e881b2f29e58d",
   "targetDefaults": {
     "@angular-devkit/build-angular:browser": {
-      "cache": true,
+      "cache": false,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
@@ -33,7 +33,7 @@
       ]
     },
     "@nx/jest:jest": {
-      "cache": true,
+      "cache": false,
       "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
       "options": {
         "passWithNoTests": true
@@ -46,10 +46,11 @@
       }
     },
     "e2e-ci--**/*": {
+      "cache": false,
       "dependsOn": ["^build"]
     },
     "server": {
-      "cache": true
+      "cache": false
     }
   },
   "plugins": [

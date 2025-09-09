@@ -1,27 +1,43 @@
 services:
   # frontend
-  frontend:
-    build:
-      dockerfile: ./apps/frontend/Dockerfile.dev
-      target: dev
-      context: .
-    command: npm run dev:front
-    ports:
-      - '4200:4200'
-    depends_on:
-      - backend
-    volumes:
-      - .:/app
-      - /app/node_modules
+  # frontend:
+  #   build:
+  #     dockerfile: ./apps/frontend/Dockerfile.dev
+  #     target: dev
+  #     context: .
+  #   command: npm run dev:front
+  #   ports:
+  #     - '4200:4200'
+  #   depends_on:
+  #     - backend
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
   # backend
   backend:
     build:
       dockerfile: ./apps/backend/Dockerfile.dev
       target: dev
       context: .
-    command: npm run dev:back
     ports:
       - '3000:3000'
+      - '9090:9090'
     volumes:
       - .:/app
       - /app/node_modules
+    depends_on:
+      - redis
+  redis:
+    image: redis:6.2.17-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --port 6379 --save 20 1 --loglevel warning
+    expose:
+      - 6379
+    volumes:
+      - redis:/data
+
+volumes:
+  redis:
+    driver: local

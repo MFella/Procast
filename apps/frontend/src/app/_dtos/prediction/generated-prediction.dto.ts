@@ -1,3 +1,3 @@
-export type GeneratedPredictionDTO = {
-  result: [number, number];
+export type ScheduledPredictionDTO = {
+  jobId: string;
 };

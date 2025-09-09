@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package prediction;
+
+service PredictionService {
+    rpc ObserveProgress(PredictionProgressRequest) returns (stream PredictionProgressResponse);
+}
+
+message PredictionProgressRequest {
+    string jobId = 1;
+}
+
+message PredictionProgressResponse {
+    int32 progress = 1;
+}

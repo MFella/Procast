@@ -2,9 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  CUSTOM_ELEMENTS_SCHEMA,
   DestroyRef,
-  ElementRef,
   Inject,
   inject,
   OnInit,
@@ -58,12 +56,11 @@ import {
 } from '@angular/material/progress-bar';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import {
-  catchError,
   defaultIfEmpty,
+  filter,
   firstValueFrom,
   map,
   Observable,
-  of,
   Subject,
   take,
   takeUntil,
@@ -109,6 +106,7 @@ export class WorkspaceComponent implements OnInit {
   private static readonly MINIMAL_SEQUENCE_LENGTH = 6;
   private static readonly UNDO_REDO_LENGTH_THRESHOLD = 20;
   private static readonly CHART_AXES_HIDE_THRESHOLD_PX = 500;
+  private static readonly PREDICTION_COMPLETED_VALUE = 100;
 
   private readonly matDialog = inject(MatDialog);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
@@ -139,8 +137,9 @@ export class WorkspaceComponent implements OnInit {
 
   isEditingWorksheetName = false;
   worksheetName = 'Untilted';
-  computationProgressValue: number = 0;
+  computationProgressValue = 0;
   computationProgressBarMode: ProgressBarMode = 'determinate';
+  scheduledPredictionJobId = '';
 
   excludedOptimizersFromLearningRate: Array<Optimizer> = ['adadelta'];
   canStartPrediction = false;
@@ -169,7 +168,7 @@ export class WorkspaceComponent implements OnInit {
         tension: 0.2,
         borderColor: 'blue',
         segment: {
-          borderColor: (ctx) =>
+          borderColor: (ctx: any) =>
             this.isPredicted(ctx, [10, 10]) ? 'gray' : 'blue',
           borderDash: (ctx: any) => this.isPredicted(ctx, [10, 10]),
           backgroundColor: (ctx: any) =>
@@ -221,7 +220,7 @@ export class WorkspaceComponent implements OnInit {
     {
       label: 'Generate',
       iconName: 'play',
-      clickCallback: this.generatePrediction.bind(this),
+      clickCallback: this.schedulePrediction.bind(this),
       resolveLinkDisabled: () =>
         !this.canStartPrediction || this.isPredictionInProgress,
     },
@@ -294,14 +293,14 @@ export class WorkspaceComponent implements OnInit {
       });
   }
 
-  async generatePrediction(): Promise<void> {
+  async schedulePrediction(): Promise<void> {
     const predictionActionButtonConfig = this.actionButtonConfigList.shift()!;
 
     try {
       this.lastPredictionFailed = false;
       this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
-      let generatedPrediction: Array<number> = [];
+      // let scheduledPrediction: Array<number> = [];
 
       const data = Array.from(this.worksheetData.values()).map(
         (entry) => entry.value
@@ -310,24 +309,25 @@ export class WorkspaceComponent implements OnInit {
         this.stopPredictionActionButtonConfig
       );
 
-      const predictionResult = await firstValueFrom(
+      const scheduledPredictionResult = await firstValueFrom(
         this.predictionService
-          .startPrediction(data, this.trainingConfig!)
+          .schedulePrediction(data, this.trainingConfig!)
           .pipe(takeUntil(this.requestCancelled$), defaultIfEmpty(null))
       );
 
       this.actionButtonConfigList.shift();
       this.actionButtonConfigList.unshift(predictionActionButtonConfig);
 
-      this.computationProgressValue = predictionResult ? 100 : 0;
+      this.computationProgressValue = scheduledPredictionResult ? 100 : 0;
       this.computationProgressBarMode = 'determinate';
 
       this.isPredictionInProgress = false;
 
-      if (predictionResult) {
-        generatedPrediction = predictionResult.result;
-        this.applyGeneratedPrediction(generatedPrediction);
+      if (scheduledPredictionResult?.jobId != null) {
+        this.observePredictionProgress(scheduledPredictionResult.jobId);
       }
+
+      this.scheduledPredictionJobId = scheduledPredictionResult?.jobId ?? '';
     } catch (error: unknown) {
       this.actionButtonConfigList.shift();
       this.actionButtonConfigList.unshift(predictionActionButtonConfig);
@@ -422,7 +422,7 @@ export class WorkspaceComponent implements OnInit {
     );
   }
 
-  setEditingWorksheetNameState(isEditing: boolean = true): void {
+  setEditingWorksheetNameState(isEditing = true): void {
     this.isEditingWorksheetName = isEditing;
     if (isEditing) {
       setTimeout(() => {
@@ -617,5 +617,22 @@ export class WorkspaceComponent implements OnInit {
     this.activatedRoute.data.subscribe((data) => {
       this.cachedTrainConfigOpts = data['cachedTrainConfig'];
     });
+  }
+
+  private observePredictionProgress(jobId: string): void {
+    const computationCompleted$ = new Subject<void>();
+    this.isPredictionInProgress = true;
+
+    this.predictionService
+      .observePredictionProgress(jobId)
+      .pipe(filter(Boolean), takeUntil(computationCompleted$))
+      .subscribe(({ progress }) => {
+        this.computationProgressValue = progress;
+        if (progress === WorkspaceComponent.PREDICTION_COMPLETED_VALUE) {
+          this.isPredictionInProgress = false;
+          computationCompleted$.next();
+        }
+        this.changeDetectorRef.detectChanges();
+      });
   }
 }
