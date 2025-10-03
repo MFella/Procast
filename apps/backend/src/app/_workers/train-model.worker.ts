@@ -14,6 +14,7 @@ import type {
   TensorLike2D,
   TensorLike3D,
 } from '../_typings/tensorflow/tfjs_supp';
+import { IpcHandler } from '../ipc/ipc.handler';
 
 export const filename = resolve(__filename);
 
@@ -24,6 +25,7 @@ type PredictionStatusRequest = {
 type ComputationProgress = {
   progress: number;
   jobId: string;
+  result?: [number, number];
 };
 
 @Controller()
@@ -36,14 +38,18 @@ export class TrainModelWorker {
   @GrpcMethod('PredictionService', 'ObserveProgress')
   observeProgress(
     predictionStatusRequest: PredictionStatusRequest
-  ): Observable<Pick<ComputationProgress, 'progress'>> {
+  ): Observable<Pick<ComputationProgress, 'progress' | 'result'>> {
     const jobId = predictionStatusRequest['jobId'];
+
     return TrainModelWorker.COMPUTATION_PROGRESS$.pipe(
       filter(
         (computationProgress) =>
           !!computationProgress && computationProgress?.jobId === jobId
       ),
-      map(({ progress }) => ({ progress }))
+      map(({ progress, result }) => {
+        console.log('w', progress, result, process.pid, process.ppid);
+        return { progress, result };
+      })
     );
   }
 
@@ -51,6 +57,13 @@ export class TrainModelWorker {
     workerMessageFitPayload: WorkerMessageFitPayload,
     jobId: string
   ): Promise<OutputPrediction> {
+    console.log('registerd process', process.pid);
+    IpcHandler.sendMessage({
+      pid: process.pid,
+      jobId,
+      action: 'register-training',
+    });
+
     const {
       trainingConfig: {
         optimizer,
@@ -85,17 +98,11 @@ export class TrainModelWorker {
       verbose: 0,
       callbacks: {
         onTrainBegin: () => {
-          process.send({
+          IpcHandler.sendMessage({
             pid: process.pid,
             computationProgress: 0,
             jobId,
-          });
-        },
-        onTrainEnd: () => {
-          process.send({
-            pid: process.pid,
-            computationProgress: 100,
-            jobId,
+            action: 'training-begin',
           });
         },
         onEpochBegin: async (epoch) => {
@@ -103,10 +110,11 @@ export class TrainModelWorker {
             (epoch / (epochs * batchSize)) * 100
           );
           if (progressValue % 10 === 0) {
-            process.send({
+            IpcHandler.sendMessage({
               pid: process.pid,
               computationProgress: progressValue,
               jobId,
+              action: 'training-progress',
             });
           }
         },
@@ -119,10 +127,12 @@ export class TrainModelWorker {
     const prediction = model.predict(lastDataFromPastTensor) as any;
     const result = Object.values(prediction.dataSync()) as OutputPrediction;
 
-    process.send({
+    IpcHandler.sendMessage({
       pid: process.pid,
-      predictionResult: result,
+      result,
+      computationProgress: 100,
       jobId,
+      action: 'training-progress',
     });
     return result;
   }

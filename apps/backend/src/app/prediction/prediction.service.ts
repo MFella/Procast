@@ -4,6 +4,7 @@ import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { ComputeInteractUtil } from '../util/compute-interact.util';
+import { IpcHandler } from '../ipc/ipc.handler';
 
 @Injectable()
 export class PredictionService {
@@ -65,6 +66,7 @@ export class PredictionService {
       sequenceLength,
       batchSize,
       epochs: epochSize,
+      pid: process.pid,
     });
 
     setTimeout(async () => {
@@ -85,5 +87,13 @@ export class PredictionService {
     }
 
     return predictionJob.data;
+  }
+
+  async stopPrediction(jobId: string): Promise<void> {
+    await this.predictionQueue.remove(jobId);
+    IpcHandler.sendMessage({
+      action: 'cancel',
+      jobId,
+    });
   }
 }

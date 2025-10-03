@@ -22,6 +22,10 @@ node_modules
 **/*.pbsc.ts
 **/*.pbconf.ts
 **/*pb.ts
+**/*.krpref
+**/*.krproj
+**/*.krenv
+**/PredictionService/*
 
 # exe
 **/*.exe

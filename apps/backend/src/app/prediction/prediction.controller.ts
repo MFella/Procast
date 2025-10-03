@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { PredictionService } from './prediction.service';
 import { PredictionDataDTO } from '../_dtos/prediction/prediction-data.dto';
 import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';
 import { AvailableCachedTrainingOptionsDTO } from '../_dtos/training/available-cached-training-options.dto';
 import { CacheModelUtil } from './cache-model.util';
+import { StopPredictionDTO } from '../_dtos/prediction/stop-prediction.dto';
 
 @Controller('prediction')
 export class PredictionController {
@@ -17,6 +26,14 @@ export class PredictionController {
       predictionDataDTO.data,
       predictionDataDTO.trainingConfig
     );
+  }
+
+  @Delete('stop/:jobId')
+  async stopPrediction(
+    @Param('jobId') jobId: string
+  ): Promise<StopPredictionDTO> {
+    await this.predictionService.stopPrediction(jobId);
+    return {};
   }
 
   @Get('cached-train-config')

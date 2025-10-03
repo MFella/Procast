@@ -34,13 +34,13 @@ $not-started-overlay-label: 'Prediction has not started 🚀';
     }
   }
   .mat-mdc-tab-header {
-    @apply mb-2;
+    @apply mb-6;
   }
   .mat-mdc-tab-labels {
     @apply h-full relative flex flex-col;
 
     .mdc-tab.mat-mdc-tab.mat-focus-indicator {
-      @apply h-fit;
+      @apply h-fit py-2;
 
       &:last-child {
         @apply pointer-events-none;
