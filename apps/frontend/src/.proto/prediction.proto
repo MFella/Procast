@@ -12,4 +12,5 @@ message PredictionProgressRequest {
 
 message PredictionProgressResponse {
     int32 progress = 1;
+    repeated int32 result = 2;
 }

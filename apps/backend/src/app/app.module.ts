@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PredictionModule } from './prediction/prediction.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { CancelRequestInterceptor } from './_interceptors/cancel-request.interceptor';
 import { BullModule } from '@nestjs/bullmq';
 
 @Module({
@@ -10,6 +8,10 @@ import { BullModule } from '@nestjs/bullmq';
       connection: {
         port: 6379,
         host: 'localhost',
+      },
+      defaultJobOptions: {
+        removeOnFail: true,
+        removeOnComplete: true,
       },
     }),
     PredictionModule,

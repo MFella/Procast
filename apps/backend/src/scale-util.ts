@@ -1,7 +1,6 @@
-import cluster from 'cluster';
+import cluster, { Worker } from 'cluster';
 import * as os from 'os';
-import { Worker } from 'cluster';
-import { TrainModelWorker } from './app/_workers/train-model.worker';
+import { IpcHandler } from './app/ipc/ipc.handler';
 
 type FunctionCb = (...args: any[]) => Promise<void>;
 
@@ -9,8 +8,9 @@ export type ScaleOps = {
   scaleHorizontally(masterCb: FunctionCb, slaveCb: FunctionCb): Promise<void>;
 };
 
-class ScaleUtil implements ScaleOps {
+export class ScaleUtil implements ScaleOps {
   private static readonly CPUS_COUNT = os.cpus().length;
+  public static readonly WORKER_MAP = new Map<number, Worker>();
 
   async scaleHorizontally(
     masterCb?: FunctionCb,
@@ -18,50 +18,28 @@ class ScaleUtil implements ScaleOps {
   ): Promise<void> {
     if (cluster.isPrimary) {
       await masterCb?.();
-      this.listenToMessageEvent(this.respawnProcesses());
+      this.respawnProcesses();
+      IpcHandler.listenToMessageEvent({ workers: cluster.workers });
       return;
     }
 
-    process.on('message', () => {
-      console.log('wtff', process.pid);
-    });
     await slaveCb?.();
   }
 
-  private respawnProcesses(): Map<number, Worker> {
-    const workersMap = new Map<number, Worker>();
+  private respawnProcesses(): void {
     for (let i = 0; i < ScaleUtil.CPUS_COUNT; i++) {
       const worker = cluster.fork();
-      workersMap.set(worker.id, worker);
+      ScaleUtil.WORKER_MAP.set(worker.process.pid, worker);
     }
 
-    cluster.on('exit', (worker) => {
-      console.log(`Worker with id ${worker.process.pid} died. Restarting...`);
-      cluster.fork();
+    cluster.on('exit', ({ process }) => {
+      console.log(`Worker with id ${process.pid} died. Restarting...`);
+      ScaleUtil.WORKER_MAP.delete(process.pid);
+      const respawnedWorker = cluster.fork();
+
+      ScaleUtil.WORKER_MAP.set(respawnedWorker.process.pid, respawnedWorker);
+      IpcHandler.listenToMessageEvent({ worker: respawnedWorker });
     });
-    return workersMap;
-  }
-
-  private listenToMessageEvent(workersMap: Map<number, Worker>): void {
-    for (const id in cluster.workers) {
-      cluster.workers[id].on(
-        'message',
-        (message: Record<'pid' | 'computationProgress' | 'jobId', number>) => {
-          const [pid, progress, jobId] = [
-            message.pid,
-            message.computationProgress,
-            message.jobId + '',
-          ];
-          if (pid && progress && jobId) {
-            // console.log('pid', process.pid, message.jobId);
-            TrainModelWorker.COMPUTATION_PROGRESS$.next({
-              jobId,
-              progress,
-            });
-          }
-        }
-      );
-    }
   }
 }
 

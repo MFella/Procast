@@ -11,5 +11,12 @@ message PredictionProgressRequest {
 }
 
 message PredictionProgressResponse {
+    /**
+     * Progress of prediciton. That's the natural number between 0 (start) and 100 (finish).
+     */
     int32 progress = 1;
+    /**
+     * List of result, present when prediction is finished.
+     */
+    repeated int32 result = 2;
 }

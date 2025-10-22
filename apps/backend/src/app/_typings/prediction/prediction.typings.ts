@@ -23,6 +23,7 @@ export type WorkerMessage = {
     lastDataFromPast: number[][];
     pastData: Array<number>;
     sequenceLength: number;
+    pid: number;
   };
 };
 

@@ -27,7 +27,9 @@
     <ng-container *ngTemplateOutlet="sidebarTemplateRef"></ng-container>
   </div>
 
-  <div class="col-span-3 row-span-2 col-start-1 row-start-5 hidden sm:block">
+  <div
+    class="col-span-3 row-span-2 col-start-1 row-start-5 hidden sm:block relative"
+  >
     <mat-tab-group
       class="px-4 h-full sm:pb-4"
       mat-stretch-tabs="false"
@@ -93,20 +95,17 @@
           *ngTemplateOutlet="worksheetDataTemplateRef"
         ></ng-container>
       </mat-tab>
-      <mat-tab (click)="$event.preventDefault()">
-        <ng-template mat-tab-label>
-          <button
-            mat-fab
-            extended
-            class="!h-8 !pointer-events-none"
-            (click)="addNewSheet($event)"
-          >
-            <span>New Sheet</span>
-            <mat-icon>add</mat-icon>
-          </button>
-        </ng-template>
-      </mat-tab>
     </mat-tab-group>
+    <div class="!h-8 !absolute -top-4 mx-2">
+      <button
+        mat-mini-fab
+        aria-label="Add new sheet"
+        class="scale-[.6]"
+        (click)="addNewSheet($event)"
+      >
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
   </div>
   <div class="row-span-2 col-start-4 row-start-5 hidden sm:block">
     <ng-template #actionsTemplateRef>

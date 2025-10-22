@@ -68,6 +68,12 @@ export class PredictionService {
     );
   }
 
+  stopPrediction(jobId: string): Observable<void> {
+    return this.httpClient.delete<void>(
+      `${this.getBackendUrl()}/stop/${jobId}`
+    );
+  }
+
   private getBackendUrl(): string {
     return `${environment.backend_url}/prediction`;
   }

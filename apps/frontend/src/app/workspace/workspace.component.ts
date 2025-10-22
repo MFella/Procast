@@ -60,8 +60,10 @@ import {
   filter,
   firstValueFrom,
   map,
+  merge,
   Observable,
   Subject,
+  switchMap,
   take,
   takeUntil,
 } from 'rxjs';
@@ -209,21 +211,23 @@ export class WorkspaceComponent implements OnInit {
 
   chartLegend = true;
 
-  stopPredictionActionButtonConfig: ActionButtonConfig = {
+  private stopPredictionActionButtonConfig: ActionButtonConfig = {
     label: 'Stop',
     iconName: 'cancel',
     clickCallback: () => this.requestCancelled$.next(),
     resolveLinkDisabled: () => false,
   };
 
+  private generatePredictionActionButtonConfig: ActionButtonConfig = {
+    label: 'Generate',
+    iconName: 'play',
+    clickCallback: this.schedulePrediction.bind(this),
+    resolveLinkDisabled: () =>
+      !this.canStartPrediction || this.isPredictionInProgress,
+  };
+
   actionButtonConfigList: Array<ActionButtonConfig> = [
-    {
-      label: 'Generate',
-      iconName: 'play',
-      clickCallback: this.schedulePrediction.bind(this),
-      resolveLinkDisabled: () =>
-        !this.canStartPrediction || this.isPredictionInProgress,
-    },
+    this.generatePredictionActionButtonConfig,
     {
       label: 'Load',
       iconName: 'import',
@@ -268,6 +272,7 @@ export class WorkspaceComponent implements OnInit {
     this.generateRandomData();
 
     this.observeCachedTrainConfigOptions();
+    this.observeComputationStopRequested();
   }
 
   openLoadDataModal(): void {
@@ -294,49 +299,35 @@ export class WorkspaceComponent implements OnInit {
   }
 
   async schedulePrediction(): Promise<void> {
-    const predictionActionButtonConfig = this.actionButtonConfigList.shift()!;
-
     try {
       this.lastPredictionFailed = false;
       this.computationProgressBarMode = 'query';
       this.isPredictionInProgress = true;
-      // let scheduledPrediction: Array<number> = [];
+      this.computationProgressValue = 0;
 
       const data = Array.from(this.worksheetData.values()).map(
         (entry) => entry.value
       );
-      this.actionButtonConfigList.unshift(
-        this.stopPredictionActionButtonConfig
-      );
+      this.actionButtonConfigList[0] = this.stopPredictionActionButtonConfig;
+
+      this.changeDetectorRef.detectChanges();
 
       const scheduledPredictionResult = await firstValueFrom(
         this.predictionService
           .schedulePrediction(data, this.trainingConfig!)
-          .pipe(takeUntil(this.requestCancelled$), defaultIfEmpty(null))
+          .pipe(defaultIfEmpty(null))
       );
-
-      this.actionButtonConfigList.shift();
-      this.actionButtonConfigList.unshift(predictionActionButtonConfig);
-
-      this.computationProgressValue = scheduledPredictionResult ? 100 : 0;
-      this.computationProgressBarMode = 'determinate';
-
-      this.isPredictionInProgress = false;
 
       if (scheduledPredictionResult?.jobId != null) {
         this.observePredictionProgress(scheduledPredictionResult.jobId);
+        this.scheduledPredictionJobId = scheduledPredictionResult?.jobId ?? '';
+      } else {
+        this.alertService.showErrorSnackBar(
+          'Starting of prediction has occurred an error. JobId is not specified.'
+        );
       }
-
-      this.scheduledPredictionJobId = scheduledPredictionResult?.jobId ?? '';
     } catch (error: unknown) {
-      this.actionButtonConfigList.shift();
-      this.actionButtonConfigList.unshift(predictionActionButtonConfig);
-
-      this.isPredictionInProgress = false;
-      this.lastPredictionFailed = true;
-
-      this.computationProgressBarMode = 'determinate';
-      this.computationProgressValue = 100;
+      this.clearComputationProgress(true);
 
       if (TypeHelper.isUnknownAnObject(error, 'message')) {
         this.alertService.showErrorSnackBar(error.message);
@@ -622,17 +613,56 @@ export class WorkspaceComponent implements OnInit {
   private observePredictionProgress(jobId: string): void {
     const computationCompleted$ = new Subject<void>();
     this.isPredictionInProgress = true;
+    this.computationProgressBarMode = 'determinate';
 
     this.predictionService
       .observePredictionProgress(jobId)
-      .pipe(filter(Boolean), takeUntil(computationCompleted$))
-      .subscribe(({ progress }) => {
+      .pipe(
+        filter(Boolean),
+        takeUntil(merge(computationCompleted$, this.requestCancelled$))
+      )
+      .subscribe(({ progress, result }) => {
         this.computationProgressValue = progress;
         if (progress === WorkspaceComponent.PREDICTION_COMPLETED_VALUE) {
           this.isPredictionInProgress = false;
+          this.actionButtonConfigList[0] =
+            this.generatePredictionActionButtonConfig;
+          debugger;
+          if (result.length > 0) {
+            this.applyGeneratedPrediction(result);
+          }
           computationCompleted$.next();
         }
         this.changeDetectorRef.detectChanges();
       });
+  }
+
+  private observeComputationStopRequested(): void {
+    this.requestCancelled$
+      .pipe(
+        takeUntilDestroyed(this.#destroyRef),
+        switchMap(() =>
+          this.predictionService.stopPrediction(
+            String(this.scheduledPredictionJobId)
+          )
+        )
+      )
+      .subscribe(() => {
+        this.clearComputationProgress();
+      });
+  }
+
+  private clearComputationProgress(didFail = false): void {
+    this.actionButtonConfigList[0] = this.generatePredictionActionButtonConfig;
+    this.computationProgressValue = didFail ? 100 : 0;
+    this.isPredictionInProgress = false;
+    this.computationProgressBarMode = 'determinate';
+    this.scheduledPredictionJobId = '';
+
+    if (didFail) {
+      this.lastPredictionFailed = true;
+    }
+
+    this.changeDetectorRef.detectChanges();
   }
 }
