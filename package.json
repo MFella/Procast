@@ -8,6 +8,8 @@
     "dev:front": "npx nx run frontend:serve --host=0.0.0.0 --disable-host-check --skip-nx-cache",
     "dev:back": "npx nx run backend:serve",
     "reset": "npm cache clean --force && npx nx reset && npx nx clear-cache",
+    "fix:prettier": "pnpm prettier --write \"**/*.{ts,js,scss.html}\"",
+    "fix:eslint": "pnpm eslint \"**/*.{ts,js,scss.html}\" --fix",
     "front-proto:gen:win": "for /f %G in ('dir /b apps\\frontend\\src\\.proto\\*.proto') do grpc_tools_node_protoc --plugin=protoc-gen-ng=.\\node_modules\\.bin\\protoc-gen-ng.cmd --ng_out=apps\\frontend\\src\\.proto\\ -I apps\\frontend\\src\\.proto\\ apps\\frontend\\src\\.proto\\%G",
     "run:grpc-proxy:dev": "grpcwebproxy-v0.15.0-win64.exe --backend_addr=localhost:9090 --run_tls_server=false --allowed_origins=http://localhost:4200 --server_http_max_write_timeout=900s"
   },

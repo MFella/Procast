@@ -3,7 +3,6 @@ import type { TrainingConfig } from '../_typings/prediction/training.typings';
 import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
-import { ComputeInteractUtil } from '../util/compute-interact.util';
 import { IpcHandler } from '../ipc/ipc.handler';
 
 @Injectable()
@@ -69,10 +68,6 @@ export class PredictionService {
       pid: process.pid,
     });
 
-    setTimeout(async () => {
-      ComputeInteractUtil.ABORT_CONTROLLER.abort();
-    }, 2000);
-
     return {
       jobId: trainModelWorker.id,
     };
@@ -90,7 +85,6 @@ export class PredictionService {
   }
 
   async stopPrediction(jobId: string): Promise<void> {
-    await this.predictionQueue.remove(jobId);
     IpcHandler.sendMessage({
       action: 'cancel',
       jobId,

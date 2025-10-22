@@ -1,3 +1,5 @@
+import type { Worker } from 'cluster';
+
 export type ProcessActionType =
   | 'cancel'
   | 'register-training'
@@ -31,3 +33,9 @@ export type ProcessSendPayload = ProcessSendBasePayload &
     | DeregisterTrainingSendPayload
     | CancelTrainingSendPayload
   );
+
+export type ListenToProcessMessageEventPayload =
+  | {
+      workers: NodeJS.Dict<Worker>;
+    }
+  | { worker: Worker };

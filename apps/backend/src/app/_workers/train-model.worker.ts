@@ -47,7 +47,6 @@ export class TrainModelWorker {
           !!computationProgress && computationProgress?.jobId === jobId
       ),
       map(({ progress, result }) => {
-        console.log('w', progress, result, process.pid, process.ppid);
         return { progress, result };
       })
     );
@@ -57,7 +56,6 @@ export class TrainModelWorker {
     workerMessageFitPayload: WorkerMessageFitPayload,
     jobId: string
   ): Promise<OutputPrediction> {
-    console.log('registerd process', process.pid);
     IpcHandler.sendMessage({
       pid: process.pid,
       jobId,

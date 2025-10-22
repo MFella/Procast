@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { PredictionService } from './prediction.service';
 import { PredictionDataDTO } from '../_dtos/prediction/prediction-data.dto';
 import { ScheduledPredictionDTO } from '../_dtos/prediction/scheduled-prediction.dto';

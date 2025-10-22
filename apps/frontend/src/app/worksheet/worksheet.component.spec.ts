@@ -8,9 +8,8 @@ describe('WorksheetComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WorksheetComponent]
-    })
-    .compileComponents();
+      imports: [WorksheetComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(WorksheetComponent);
     component = fixture.componentInstance;

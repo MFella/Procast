@@ -640,7 +640,6 @@ export class WorkspaceComponent implements OnInit {
   private observeComputationStopRequested(): void {
     this.requestCancelled$
       .pipe(
-        take(1),
         takeUntilDestroyed(this.#destroyRef),
         switchMap(() =>
           this.predictionService.stopPrediction(

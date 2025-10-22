@@ -1,7 +1,11 @@
+import { ScaleUtil } from '../../scale-util';
 import { TypeHelper } from '../_helpers/type-helper';
-import { ProcessSendPayload } from '../_typings/ipc/ipc.typings';
+import {
+  ListenToProcessMessageEventPayload,
+  ProcessSendPayload,
+} from '../_typings/ipc/ipc.typings';
 import { TrainModelWorker } from '../_workers/train-model.worker';
-import { Worker } from 'cluster';
+import { ComputeInteractUtil } from '../util/compute-interact.util';
 
 export class IpcHandler {
   private static readonly JOB_ID_TO_TRAIN_PROCESS_ID_MAP = new Map<
@@ -13,9 +17,16 @@ export class IpcHandler {
     process.send(payload);
   }
 
-  static listenToMessageEvent(workers: NodeJS.Dict<Worker>): void {
-    for (const id in workers) {
-      workers[id].on('message', IpcHandler.handleMessage);
+  static listenToMessageEvent(
+    payload: ListenToProcessMessageEventPayload
+  ): void {
+    if ('worker' in payload) {
+      payload.worker.on('message', IpcHandler.handleMessage);
+      return;
+    }
+
+    for (const id in payload.workers) {
+      payload.workers[id].on('message', IpcHandler.handleMessage);
     }
   }
 
@@ -23,13 +34,13 @@ export class IpcHandler {
     switch (payload.action) {
       case 'cancel':
         {
+          ComputeInteractUtil.ABORT_CONTROLLER.abort('Computation cancelled');
+
           const jobId = payload.jobId;
           const pidToKill =
             IpcHandler.JOB_ID_TO_TRAIN_PROCESS_ID_MAP.get(jobId);
-          console.log(IpcHandler.JOB_ID_TO_TRAIN_PROCESS_ID_MAP);
 
           if (pidToKill != null) {
-            console.log('Process is about to be killed');
             IpcHandler.JOB_ID_TO_TRAIN_PROCESS_ID_MAP.delete(jobId);
             process.kill(pidToKill);
           } else {
